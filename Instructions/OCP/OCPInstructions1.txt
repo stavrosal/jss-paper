@@ -1,0 +1,11 @@
+We want to model a system of food Stores. Each store
+has a some products (Product) of different categories. 
+Specifically there are 3 categories:
+ -vegetables
+ -fruits
+ -dairy
+We want a function that returns the total amount of items in 
+store (int) and function that prints all items' names (void).
+Assume there is a getName() getter in Product class. Also
+assume that each object (Vegetable, Fruit, Dairy) extends
+the abstract Product class.

@@ -1,0 +1,13 @@
+We wish to develop a system that creates games.
+There are 2 types of games (FPS, MMO) and each
+game has 2 characters (Archer and Knight) where
+each character has different weapons, for example,
+Knight attacks with a sword and Archer attacks with
+a bow. You don't need to model weapons, just print
+a line of the following type:
+"<Genre> <Character> attacks with <Weapon>"
+Assume that each character behaves differently
+depending on the game genre. We want to be able 
+to create Games that have a lot of characters, 
+but we don't want to mix different genres
+(for example, an FPS Knight on an MMO game).

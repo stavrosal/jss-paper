@@ -1,0 +1,15 @@
+A company that has warehouses all over the globe wishes
+to develop a system such as each warehouse can manage
+its products and calculate order costs. Each warehouse
+has some attributes, which are the name of the warehouse (String)
+,a List of Items (Item) and a List of Orders (Item). 
+There is also a string that will hold the type of the warehouse. 
+Each warehouse can be either local or central, based on its location. 
+The key difference between a local and a central warehouse is the VAT
+rate policy. The vat type (REDUCED, NORMAL, EXTRA) will be held in a String variable.
+There is also an addOrder method which takes as a parameter an Item,
+adds it to the orders list and at the same time, removes it from the items list. 
+Finally, there is a calcCost method which doesn’t take any parameters and calculates
+the total cost of the orders, that is, the cost of each item 
+(assume there is a getPrice() method in Item class which returns the price of the item as double) 
+along with the VAT, which is applied to the total cost. 

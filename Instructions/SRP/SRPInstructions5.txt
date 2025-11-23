@@ -1,0 +1,8 @@
+We want to model Wedding events. Each wedding will take place in a venue (String)
+and will have a List of people (assume People class is already implemented).
+Each wedding has food catered to the attendants, where the total cost is calculated
+by the catering company. Specifically, each person is entitled to one meal, which
+costs 3€ if its basic, and 3.5€ if its vegan. If there are more than 500 attendants
+then the prices are -1 / person (that means 2€/basic and 2.5€/vegans). The wedding also
+has a photographer that is paid based on the attendants. The base price is 1€/person but
+if there are more than 600 attendants then the price drops to 0.75€/person.

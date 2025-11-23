@@ -1,0 +1,11 @@
+We wish to model a system of a clothing shop.
+The shop (for now) sells only pants and shirts
+There are two types of clothing, Vintage and
+Modern. Each clothing contains a void printInfo
+method which takes no parameters and prints a 
+message of the type:
+"A <Type> of <Clothes>"
+It is worth noting that each clothing shop can 
+sell only one of the clothing types, that means
+that a Modern Shop cannot sell Vintage clothing
+and vice versa.

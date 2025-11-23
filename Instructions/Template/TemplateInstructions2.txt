@@ -1,0 +1,10 @@
+We want to simulate a system of FiniteStateMachines.
+There are a lot of FSMs where each one performs an operation.
+After a machine starts (start()), it runs until a finish 
+condition is met (isFinished()), and the finish method 
+is called (finish()). For now, our system has two machines:
+A DivisibleNumbersMachine, where it calculates all numbers 
+divisible by 4 up to a threshold (specified by the user)
+and a PushDownAutomaton, where it calculates the sum of
+numbers up to a threshold (specified by the user). The 
+PushDown Machine has an ArrayList<Integer> as a stack. 
