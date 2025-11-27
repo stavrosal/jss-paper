@@ -1,0 +1,194 @@
+class Store{
+    List<Vegetable> vegetables;
+    List<Fruit> fruits;
+    List<Dairy> dairy;
+    
+    public void addVegetable(Vegetable item){
+        this.vegetables.add(item);
+    }
+    
+    public void addFruit(Fruit item){
+        this.fruits.add(item);
+    }
+    
+    public void addDairy(Dairy item){
+        this.dairy.add(item);
+    }
+    
+    public int getTotalItems(){
+        int total = vegetables.size() + fruits.size() + dairy.size();
+        
+        return total;
+    }
+    
+    
+    public void printItemNames(){
+        // Supposing that all Product classes have a getName() method
+        for (Vegetable v : vegetables){
+            System.out.println(v.getName());
+        }
+        
+        for (Fruit f : fruits){
+            System.out.println(f.getName());
+        }
+        
+        for (Dairy d : dairy){
+            System.out.println(d.getName());
+        }
+    }
+}
+bad smells συνοπτικαThe provided Store class exhibits several code smells that can affect maintainability, extensibility, and readability. Below is a concise summary of the bad smells, based on common software engineering principles:
+
+Code Duplication: The printItemNames method has repetitive code structures (three similar for loops) for iterating over Vegetable, Fruit, and Dairy lists. This violates the DRY (Don't Repeat Yourself) principle.
+Lack of Abstraction: The class handles Vegetable, Fruit, and Dairy separately, despite their likely shared behavior (e.g., all have a getName() method). This suggests a missing common interface or superclass (e.g., Product) to unify these types.
+Tight Coupling: The class is tightly coupled to specific product types (Vegetable, Fruit, Dairy). Adding a new category (e.g., Meat) requires modifying the class (new list, new methods), violating the Open-Closed Principle.
+Primitive Obsession: The use of separate lists for each product type could be simplified by using a single collection (e.g., List<Product>) if a common interface or superclass exists.
+Potential Null Pointer Risk: The lists (vegetables, fruits, dairy) are not initialized in the provided code, which could lead to NullPointerException if not handled in the constructor or elsewhere.
+Feature Envy: The printItemNames method directly accesses the getName() method of each item, which could be delegated to a more cohesive method in a Product interface or class.
+
+Suggested Improvements
+
+Introduce a Product interface or superclass with a getName() method.
+Use a single List<Product> to store all items, reducing duplication and simplifying extensibility.
+Replace repetitive loops in printItemNames with a single loop over the unified list.
+Initialize lists in the constructor to avoid null pointer issues.
+Consider a more flexible design (e.g., a Category enum or tagging system) to handle different product types without modifying the class.
+
+These changes would improve maintainability, scalability, and adherence to SOLID principles.Περιγράψτε τις μετρικές (metrics) που επηρεάζονται.Οι "κακές οσμές" (code smells) που εντοπίστηκαν στην κλάση Store επηρεάζουν διάφορες μετρικές ποιότητας κώδικα, οι οποίες χρησιμοποιούνται για την αξιολόγηση της συντηρησιμότητας, της αναγνωσιμότητας και της επεκτασιμότητας του κώδικα. Ακολουθεί μια συνοπτική περιγραφή των μετρικών που επηρεάζονται από τα αναγνωρισμένα προβλήματα:
+
+Maintainability (Συντηρησιμότητα):
+Επηρεάζεται από: Code Duplication, Lack of Abstraction, Tight Coupling.
+Περιγραφή: Η επανάληψη κώδικα (π.χ. τρεις παρόμοιες for βρόχους στο printItemNames) και η έλλειψη αφαίρεσης (missing Product interface) καθιστούν τον κώδικα δύσκο
+
+Interruptedμετρικες οπως πχ LCOM CBO NIt...Οι "κακές οσμές" (code smells) στην κλάση Store επηρεάζουν συγκεκριμένες μετρικές ποιότητας κώδικα, όπως οι LCOM, CBO, και NIT, καθώς και άλλες σχετικές μετρικές. Ακολουθεί μια συνοπτική περιγραφή των μετρικών που επηρεάζονται από τα προβλήματα που εντοπίστηκαν (Code Duplication, Lack of Abstraction, Tight Coupling, Primitive Obsession, Potential Null Pointer Risk, Feature Envy):
+
+LCOM (Lack of Cohesion of Methods):
+Περιγραφή: Μετρά το βαθμό συνοχής των μεθόδων σε μια κλάση, δηλαδή αν οι μέθοδοι της κλάσης συνεργάζονται για έναν κοινό σκοπό.
+Επίδραση: Η κλάση Store έχει χαμηλή συνοχή λόγω του διαχωρισμού των λιστών (vegetables, fruits, dairy) και των ξεχωριστών μεθόδων (addVegetable, addFruit, addDairy). Οι μέθοδοι δεν μοιράζονται κοινή λογική ή δεδομένα αποτελεσματικά, καθώς κάθε λίστα αντιμετωπίζεται ξεχωριστά, αυξάνοντας το LCOM.
+Αιτία: Lack of Abstraction και Code Duplication.
+
+CBO (Coupling Between Objects):
+Περιγραφή: Μετρά τον αριθμό των κλάσεων στις οποίες συνδέεται η κλάση Store (εξαρτήσεις).
+Επίδραση: Η κλάση εξαρτάται από τρεις συγκεκριμένες κλάσεις (Vegetable, Fruit, Dairy), δημιουργώντας υψηλό βαθμό σύζευξης. Αν προστεθεί νέος τύπος προϊόντος (π.χ. Meat), απαιτούνται αλλαγές στον κώδικα, αυξάνοντας το CBO.
+Αιτία: Tight Coupling και Lack of Abstraction.
+
+NIT (Number of Instance Types):
+Περιγραφή: Μετρά τον αριθμό των διαφορετικών τύπων δεδομένων που χρησιμοποιούνται ως πεδία ή παράμετροι στην κλάση.
+Επίδραση: Η κλάση χρησιμοποιεί τρεις ξεχωριστούς τύπους (List<Vegetable>, List<Fruit>, List<Dairy>), αυξάνοντας το NIT. Αν υπήρχε ένας κοινός τύπος (π.χ. List<Product>), το NIT θα ήταν μικρότερο, βελτιώνοντας την ευελιξία.
+Αιτία: Primitive Obsession και Lack of Abstraction.
+
+WMC (Weighted Methods per Class):
+Περιγραφή: Μετρά την πολυπλοκότητα των μεθόδων μιας κλάσης, συνήθως με βάση τον αριθμό των μεθόδων ή την πολυπλοκότητά τους.
+Επίδραση: Οι επαναλαμβανόμενες μέθοδοι (addVegetable, addFruit, addDairy) και η μέθοδος printItemNames με τρεις παρόμοιους βρόχους αυξάνουν το WMC, καθώς προσθέτουν περιττή πολυπλοκότητα.
+Αιτία: Code Duplication και Feature Envy.
+
+RFC (Response for a Class):
+Περιγραφή: Μετρά το σύνολο των μεθόδων που μπορούν να κληθούν από την κλάση, συμπεριλαμβανομένων των εξωτερικών κλήσεων (π.χ. getName()).
+Επίδραση: Η κλήση της getName() σε κάθε τύπο (Vegetable, Fruit, Dairy) αυξάνει το RFC, καθώς η κλάση εξαρτάται από τις μεθόδους άλλων κλάσεων.
+Αιτία: Feature Envy και Tight Coupling.
+
+NOC (Number of Children):
+Περιγραφή: Μετρά τον αριθμό των υποκλάσεων που κληρονομούν από την κλάση.
+Επίδραση: Αν και η Store δεν έχει υποκλάσεις, η έλλειψη κοινής υπερκλάσης ή διεπαφής (Product) περιορίζει τη δυνατότητα επέκτασης, επηρεάζοντας έμμεσα τη μετρική αυτή σε ένα ευρύτερο σύστημα.
+Αιτία: Lack of Abstraction.
+
+LOC (Lines of Code):
+Περιγραφή: Μετρά τον συνολικό αριθμό γραμμών κώδικα.
+Επίδραση: Η επανάληψη κώδικα (π.χ. τρεις βρόχοι στο printItemNames και τρεις μέθοδοι add) αυξάνει τις γραμμές κώδικα χωρίς να προσθέτει ουσιαστική λειτουργικότητα.
+Αιτία: Code Duplication.
+
+Potential Bug Risk (Null Pointer Risk):
+Περιγραφή: Δεν είναι μετρική per se, αλλά η έλλειψη αρχικοποίησης των λιστών (vegetables, fruits, dairy) μπορεί να οδηγήσει σε σφάλματα (π.χ. NullPointerException).
+Επίδραση: Επηρεάζει την αξιοπιστία και τη σταθερότητα του κώδικα, κάτι που μπορεί να παρακολουθείται μέσω εργαλείων ανάλυσης σφαλμάτων.
+Αιτία: Potential Null Pointer Risk.
+
+
+Συνοπτική Επισκόπηση
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ΜετρικήΕπίδρασηΑιτίαLCOMΥψηλό (χαμηλή συνοχή)Lack of Abstraction, Code DuplicationCBOΥψηλό (ισχυρή σύζευξη)Tight Coupling, Lack of AbstractionNITΥψηλό (πολλοί τύποι)Primitive Obsession, Lack of AbstractionWMCΥψηλό (περιττή πολυπλοκότητα)Code Duplication, Feature EnvyRFCΥψηλό (πολλές εξωτερικές κλήσεις)Feature Envy, Tight CouplingNOCΧαμηλό (περιορισμένη επεκτασιμότητα)Lack of AbstractionLOCΥψηλό (περιττός κώδικας)Code Duplication
+Προτεινόμενες Βελτιώσεις
+
+Εισαγωγή διεπαφής Product για ενοποίηση τύπων, μειώνοντας CBO, NIT, και LCOM.
+Χρήση μίας λίστας List<Product> αντί για ξεχωριστές λίστες, μειώνοντας NIT και LOC.
+Αναδιάρθρωση του printItemNames με έναν βρόχο, μειώνοντας WMC και LOC.
+Αρχικοποίηση λιστών στον κατασκευαστή για αποφυγή σφαλμάτων.
+Εφαρμογή του Open-Closed Principle για μείωση CBO και βελτίωση επεκτασιμότητας.
+
+Αυτές οι αλλαγές θα βελτιώσουν τις μετρικές και την ποιότητα του κώδικα συνολικά.πεσ μερικες επεκτασεις του συστηματοςΜε βάση την κλάση Store και τις "κακές οσμές" που εντοπίστηκαν, ακολουθούν μερικές προτεινόμενες επεκτάσεις του συστήματος που μπορούν να βελτιώσουν τη λειτουργικότητα, τη συντηρησιμότητα και την επεκτασιμότητά του, αντιμετωπίζοντας παράλληλα τις μετρικές που επηρεάζονται (LCOM, CBO, NIT, κ.λπ.):
+
+Εισαγωγή Διεπαφής ή Υπερκλάσης Product:
+Περιγραφή: Δημιουργία μιας διεπαφής Product (ή αφηρημένης κλάσης) με κοινές μεθόδους όπως getName(), getPrice(), ή getCategory(). Οι κλάσεις Vegetable, Fruit, και Dairy θα υλοποιούν/κληρονομούν αυτή τη διεπαφή.
+Όφελος: Μειώνει το NIT και το CBO, βελτιώνει τη συνοχή (LCOM), και επιτρέπει την ενοποίηση των λιστών σε μία List<Product>.
+Παράδειγμα:Javapublic interface Product {
+    String getName();
+    double getPrice();
+    String getCategory();
+}
+
+Ενοποίηση Λιστών σε List<Product>:
+Περιγραφή: Αντικατάσταση των τριών ξεχωριστών λιστών (vegetables, fruits, dairy) με μία λίστα List<Product>. Προσθήκη μεθόδου addProduct(Product item) αντί για ξεχωριστές addVegetable, addFruit, addDairy.
+Όφελος: Μειώνει το NIT, το LOC, και την πολυπλοκότητα (WMC), ενώ διευκολύνει την προσθήκη νέων κατηγοριών χωρίς αλλαγές στον κώδικα (Open-Closed Principle).
+Παράδειγμα:Javaprivate List<Product> products = new ArrayList<>();
+public void addProduct(Product item) {
+    products.add(item);
+}
+
+Αναδιάρθρωση της printItemNames:
+Περιγραφή: Αντικατάσταση των τριών επαναλαμβανόμενων βρόχων με έναν βρόχο που διατρέχει τη List<Product>.
+Όφελος: Μειώνει το LOC και το WMC, ενώ εξαλείφει το Code Duplication.
+Παράδειγμα:Javapublic void printItemNames() {
+    for (Product p : products) {
+        System.out.println(p.getName());
+    }
+}
+
+Προσθήκη Κατηγοριοποίησης με Enum ή Τάξεις:
+Περιγραφή: Εισαγωγή ενός enum Category (π.χ. VEGETABLE, FRUIT, DAIRY) ή ενός συ
+
+InterruptedΠεριγράψτε μία πιθανή επέκταση του συστήματος (π.χ. προσθήκη ενός νέου είδους υπαλλήλου) και γιατί η λύση που προτείνατε βοηθάει στην ευκολότερη υλοποίηση της.Πιθανή Επέκταση: Προσθήκη Νέου Είδους Υπαλλήλου (Employee) στη Διαχείριση του Store
+Περιγραφή Επέκτασης:
+Μια πιθανή επέκταση του συστήματος είναι η προσθήκη διαχείρισης υπαλλήλων στο κατάστημα (Store), όπου κάθε υπάλληλος έχει διαφορετικό ρόλο, όπως Cashier, StockManager, ή Cleaner. Κάθε ρόλος μπορεί να έχει διαφορετικές ευθύνες (π.χ. ο Cashier διαχειρίζεται πωλήσεις, ο StockManager προσθέτει προϊόντα, ο Cleaner δεν αλληλεπιδρά με τα προϊόντα). Η κλάInterrupted

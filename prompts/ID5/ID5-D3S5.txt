@@ -1,0 +1,411 @@
+Skip to content
+Chat history
+
+This is a copy of a conversation between ChatGPT & Anonymous.
+
+Report conversation
+You said:
+
+/*
+We want to simulate a system of FiniteStateMachines.
+There are a lot of FSMs where each one performs an operation.
+After a machine starts (start()), it runs until a finish 
+condition is met (isFinished()), and the finish method 
+is called (finish()). For now, our system has two machines:
+A DivisibleNumbersMachine, where it calculates all numbers 
+divisible by 4 up to a threshold (specified by the user)
+and a PushDownAutomaton, where it calculates the sum of
+numbers up to a threshold (specified by the user). The 
+PushDown Machine has an ArrayList<Integer> as a stack. 
+*/
+
+public class StateMachine{
+	String name;
+	String machineType;
+	
+	private int counter;
+	
+	private int threshold;
+	
+	private List<Integer> stack;
+	
+	public StateMachine(int thresh, String machine){
+		this.threshold = thresh;
+		this.machineType = machine;
+		this.counter = 0;
+		if (machineType.equals("PushDownAutomaton")){
+			this.stack = new ArrayList<Integer>();
+		}
+	}
+	
+	public void run(){
+		start();
+		while (!isFinished()){
+			execute();
+		}
+		finish();
+	}
+	
+	public void start(){
+		if (machineType.equals("DivisibleNumbersMachine")){
+			System.out.println("Starting to find numbers divisible by 4 until " + threshold);
+		}
+		else if (machineType.equals("PushDownAutomaton")){
+			System.out.println("Started pushing numbers up to " + threshold + " to stack");
+		}
+	}
+		
+	public boolean isFinished(){
+		return counter >= threshold;
+	}
+	
+	public void execute(){
+		if (machineType.equals("DivisibleNumbersMachine")){
+			if (counter % 4 == 0){
+				System.out.println(counter + " is divisible by 4");
+			}
+			counter++;
+		}
+		else if (machineType.equals("PushDownAutomaton")){
+			stack.add(counter);
+			counter++;
+		}
+	}
+			
+	public void finish(){
+		if (machineType.equals("DivisibleNumbersMachine")){
+			System.out.println("Automaton finished");
+		}
+		else if (machineType.equals("PushDownAutomaton")){
+			int sum = 0;
+			for (int num : stack){
+				sum += num;
+			}
+			System.out.println("Sum = " + sum);
+			System.out.println("Automaton finished");
+		}
+	}
+}
+ βρες τα bad smells του κωδικα
+ChatGPT said:
+Ο παραπάνω κώδικας περιέχει αρκετά code smells (κακοσχεδιασμένες πρακτικές), που δείχνουν ότι ο κώδικας μπορεί να είναι δύσκολος στη συντήρηση, επέκταση και κατανόηση. Ακολουθούν τα κύρια bad smells που εντοπίζονται:
+
+💡 1. God Class / Large Class
+Η StateMachine χειρίζεται τη λογική και για τις δύο διαφορετικές μηχανές, γεγονός που παραβιάζει την Single Responsibility Principle (μία κλάση πρέπει να έχει έναν λόγο ύπαρξης).
+
+➡ Πρόταση βελτίωσης: Δημιουργία αφηρημένης κλάσης StateMachine και υλοποίηση δύο υποκλάσεων: DivisibleNumbersMachine και PushDownAutomaton.
+
+💡 2. Type Code with Conditional Logic
+Ο έλεγχος if (machineType.equals(...)) εμφανίζεται σε πολλές μεθόδους. Αυτό είναι ένα κλασικό παράδειγμα όπου ο τύπος οδηγεί σε conditional statements, αντί να χρησιμοποιείται η δύναμη της πολυμορφίας.
+
+➡ Πρόταση βελτίωσης: Αντί για type strings, χρησιμοποιήστε πολυμορφισμό. Κάντε τις start(), execute(), finish(), isFinished() μεθόδους abstract και υλοποιήστε διαφορετικές συμπεριφορές στις υποκλάσεις.
+
+💡 3. Duplicated Code
+Οι μέθοδοι run(), start(), execute(), finish() περιέχουν επαναλαμβανόμενο ή παρόμοιο κώδικα ανάλογα με τον τύπο της μηχανής.
+
+➡ Πρόταση βελτίωσης: Όπως παραπάνω — αφαιρέστε τα if/else με κληρονομικότητα.
+
+💡 4. Inappropriate Intimacy
+Η StateMachine έχει πεδία που δεν χρησιμοποιούνται σε όλους τους τύπους μηχανών (π.χ. stack χρησιμοποιείται μόνο από την PushDownAutomaton). Αυτό οδηγεί σε υπερφόρτωση του αντικειμένου.
+
+➡ Πρόταση βελτίωσης: Κάθε υποκλάση να περιέχει μόνο τα πεδία που χρειάζεται.
+
+💡 5. Primitive Obsession
+Χρήση του String για το machineType αντί για enum ή ακόμα καλύτερα για υποκλάσεις.
+
+➡ Πρόταση βελτίωσης: Χρησιμοποιήστε υποκλάσεις ή τουλάχιστον ένα enum για τους τύπους μηχανών.
+
+💡 6. Magic Strings
+Οι τιμές "PushDownAutomaton" και "DivisibleNumbersMachine" είναι hardcoded, κάτι που είναι επιρρεπές σε λάθη.
+
+➡ Πρόταση βελτίωσης: Αντικαταστήστε με enum ή καλύτερα, χρησιμοποιήστε πολυμορφισμό και καταργήστε τα τελείως.
+
+💡 7. Poor Encapsulation
+Η StateMachine εκθέτει εσωτερική λογική με public void run() που δεν ταιριάζει με τη σωστή ενθυλάκωση συμπεριφοράς.
+
+➡ Πρόταση βελτίωσης: Αν το run() παραμένει, να μεταφέρει πλήρως τον έλεγχο σε κλάσεις χωρίς να βασίζεται σε εξωτερική λογική ή επαληθεύσεις.
+
+💡 8. Lack of Interface or Abstraction
+Δεν υπάρχει κάποιο interface όπως FiniteStateMachine, που θα επέτρεπε την εναλλαγή υλοποιήσεων και καλύτερη δοκιμασιμότητα.
+
+➡ Πρόταση βελτίωσης: Ορίστε interface FiniteStateMachine με τις βασικές μεθόδους (start(), isFinished(), execute(), finish(), run()).
+
+Θες να στο δείξω πώς θα έμοιαζε αυτός ο κώδικας μετά από refactor;
+
+You said:
+Περιγράψτε τις μετρικές (metrics) που επηρεάζονται.
+ChatGPT said:
+Οι code smells που αναλύσαμε προηγουμένως επηρεάζουν αρνητικά αρκετές μετρικές λογισμικού, οι οποίες χρησιμοποιούνται για την εκτίμηση της ποιότητας του κώδικα. Παρακάτω αναλύονται οι βασικές μετρικές που επηρεάζονται:
+
+✅ 1. LOC (Lines of Code)
+Επηρεάζεται αρνητικά λόγω επαναλαμβανόμενου κώδικα και ελέγχων τύπων με if/else ανά περίπτωση.
+
+Μεγάλο LOC → δύσκολη συντήρηση.
+
+Βελτίωση με refactoring και κληρονομικότητα μειώνει σημαντικά το LOC.
+
+✅ 2. Cyclomatic Complexity (Κυκλωματική Πολυπλοκότητα)
+Αυξάνεται από τα πολλαπλά if-else μπλοκ που διαχειρίζονται τον τύπο της μηχανής.
+
+Δείχνει πόσες λογικές διαδρομές υπάρχουν → δυσκολεύει τα tests και αυξάνει τον κίνδυνο λαθών.
+
+Με την εφαρμογή πολυμορφισμού, η πολυπλοκότητα μειώνεται, γιατί κάθε υποκλάση διαχειρίζεται τη δική της ροή.
+
+✅ 3. Cohesion (Συνοχή)
+Η κλάση StateMachine έχει χαμηλή συνοχή, επειδή κάνει πολλές διαφορετικές εργασίες ανάλογα με τον τύπο.
+
+Η αρχή Single Responsibility Principle παραβιάζεται.
+
+Χαμηλή συνοχή = δύσκολος εντοπισμός σφαλμάτων και αλλαγών.
+
+Με refactor σε επιμέρους υποκλάσεις, η συνοχή αυξάνεται καθώς κάθε κλάση έχει σαφώς καθορισμένο ρόλο.
+
+✅ 4. Coupling (Σύζευξη)
+Η χρήση τύπων μέσω string (machineType) και κοινών μεταβλητών όπως counter, stack οδηγεί σε στενή σύζευξη των λειτουργιών.
+
+Αυτή η προσέγγιση καθιστά τη μελλοντική επέκταση (π.χ. νέες μηχανές) δυσκολότερη.
+
+Με χρήση interfaces/abstract classes, η σύζευξη μειώνεται και οι αλλαγές δεν επηρεάζουν τα υπόλοιπα συστήματα.
+
+✅ 5. DIT (Depth of Inheritance Tree)
+Στην παρούσα μορφή δεν αξιοποιείται καθόλου η κληρονομικότητα.
+
+Αν γίνει refactor με υποκλάσεις, η τιμή DIT αυξάνεται λίγο, αλλά θετικά, γιατί οργανώνει καλύτερα τη λογική.
+
+✅ 6. NOC (Number of Children)
+Προς το παρόν: 0 (καμία υποκλάση).
+
+Με refactoring σε υποκλάσεις: αυξάνεται.
+
+Περισσότερες υποκλάσεις = μεγαλύτερη επεκτασιμότητα, εφόσον η βάση είναι σωστά σχεδιασμένη.
+
+✅ 7. WMC (Weighted Methods per Class)
+Η StateMachine έχει πολλές μεθόδους με διαφορετική λογική.
+
+Το WMC είναι υψηλό → ένδειξη δυσκολίας στη συντήρηση και επαναχρησιμοποίηση.
+
+Refactoring σε απλές υποκλάσεις μειώνει το WMC και το καθιστά πιο προβλέψιμο.
+
+✅ 8. Testability
+Ο υπάρχων σχεδιασμός είναι δύσκολος για μονάδες δοκιμών γιατί η λογική είναι σκληροκωδικοποιημένη με if/else.
+
+Με interfaces και υποκλάσεις, η δυνατότητα mocking και unit testing αυξάνεται.
+
+💡 Συμπέρασμα:
+Οι κυριότερες μετρικές που επιδεινώνονται από τα bad smells είναι:
+
+Cyclomatic Complexity
+
+Cohesion
+
+Coupling
+
+LOC
+
+WMC
+
+Με κατάλληλο refactoring σε object-oriented αρχές (πολυμορφισμός, κληρονομικότητα, SRP), αυτές οι μετρικές βελτιώνονται αισθητά και ο κώδικας γίνεται πιο ευανάγνωστος, δοκιμάσιμος και επεκτάσιμος.
+
+Θες να σου δείξω παράδειγμα με refactored κώδικα για να το δεις και στην πράξη;
+
+You said:
+Ονοματίστε ποια σχεδιαστική αρχή ή πρότυπο σχεδίασης θα μπορούσε να εφαρμοστεί για την βελτίωση της ποιότητας του κώδικα και Γράψτε τον κώδικα μετά την εφαρμογή της λύσης που επιλέξατε
+ChatGPT said:
+Για τη βελτίωση της ποιότητας του κώδικα, μπορούμε να εφαρμόσουμε τις ακόλουθες σχεδιαστικές αρχές και πρότυπα σχεδίασης:
+
+✅ 1. Σχεδιαστική Αρχή: Πολυμορφισμός (Polymorphism)
+Αποφεύγουμε τα if-else με εναλλακτικές συμπεριφορές σε υποκλάσεις.
+
+✅ 2. Αρχή: Open/Closed Principle (SOLID)
+Ο κώδικας πρέπει να είναι ανοικτός για επέκταση, αλλά κλειστός για τροποποίηση.
+
+✅ 3. Πρότυπο Σχεδίασης: Strategy Pattern
+Καθορίζει μια οικογένεια αλγορίθμων (στρατηγικών) και τα καθιστά εναλλάξιμα. Αυτό βοηθά στην αποσύνδεση της λογικής της StateMachine από την εκτέλεση των επιμέρους στρατηγικών.
+
+✨ Refactored Κώδικας με χρήση Πολυμορφισμού και Strategy Pattern
+import java.util.*;
+
+interface StateMachine {
+    void start();
+    boolean isFinished();
+    void execute();
+    void finish();
+    void run(); // default behavior
+}
+
+abstract class AbstractStateMachine implements StateMachine {
+    protected int threshold;
+    protected int counter;
+
+    public AbstractStateMachine(int threshold) {
+        this.threshold = threshold;
+        this.counter = 0;
+    }
+
+    public void run() {
+        start();
+        while (!isFinished()) {
+            execute();
+        }
+        finish();
+    }
+}
+
+// ============================
+// DivisibleNumbersMachine
+// ============================
+class DivisibleNumbersMachine extends AbstractStateMachine {
+
+    public DivisibleNumbersMachine(int threshold) {
+        super(threshold);
+    }
+
+    @Override
+    public void start() {
+        System.out.println("Starting to find numbers divisible by 4 until " + threshold);
+    }
+
+    @Override
+    public boolean isFinished() {
+        return counter >= threshold;
+    }
+
+    @Override
+    public void execute() {
+        if (counter % 4 == 0) {
+            System.out.println(counter + " is divisible by 4");
+        }
+        counter++;
+    }
+
+    @Override
+    public void finish() {
+        System.out.println("DivisibleNumbersMachine finished.");
+    }
+}
+
+// ============================
+// PushDownAutomaton
+// ============================
+class PushDownAutomaton extends AbstractStateMachine {
+
+    private List<Integer> stack;
+
+    public PushDownAutomaton(int threshold) {
+        super(threshold);
+        this.stack = new ArrayList<>();
+    }
+
+    @Override
+    public void start() {
+        System.out.println("Started pushing numbers up to " + threshold + " to stack");
+    }
+
+    @Override
+    public boolean isFinished() {
+        return counter >= threshold;
+    }
+
+    @Override
+    public void execute() {
+        stack.add(counter);
+        counter++;
+    }
+
+    @Override
+    public void finish() {
+        int sum = stack.stream().mapToInt(Integer::intValue).sum();
+        System.out.println("Sum = " + sum);
+        System.out.println("PushDownAutomaton finished.");
+    }
+}
+
+// ============================
+// Χρήση
+// ============================
+public class Main {
+    public static void main(String[] args) {
+        StateMachine machine1 = new DivisibleNumbersMachine(20);
+        StateMachine machine2 = new PushDownAutomaton(10);
+
+        machine1.run();
+        machine2.run();
+    }
+}
+🔍 Οφέλη του Refactored Σχεδιασμού
+Προβληματικός Κώδικας	Refactored Κώδικας
+Ανάγκη για if/else	Καθαρός πολυμορφισμός
+Μία κλάση για όλους	Ξεχωριστές υποκλάσεις ανά μηχανή
+Χαμηλή συνοχή	Υψηλή συνοχή
+Υψηλή πολυπλοκότητα	Μικρότερη και διαχειρίσιμη
+Δύσκολα tests	Ευκολία δοκιμών με interface mocking
+Αν θέλεις, μπορούμε να προσθέσουμε και μονάδες ελέγχου (unit tests) ή ακόμα και νέους τύπους FSM απλά προσθέτοντας νέες κλάσεις που υλοποιούν το interface χωρίς καμία αλλαγή στον υπόλοιπο κώδικα.
+
+Να σου δείξω π.χ. μια τρίτη μηχανή ή πώς θα έγραφες τεστ με JUnit;
+
+You said:
+Περιγράψτε μία πιθανή επέκταση του συστήματος (π.χ. προσθήκη ενός νέου είδους υπαλλήλου) και γιατί η λύση που προτείνατε βοηθάει στην ευκολότερη υλοποίηση της.
+*
+ChatGPT said:
+Μια πιθανή επέκταση του συστήματος είναι:
+
+✅ Προσθήκη ενός νέου τύπου Finite State Machine: π.χ. FactorialMachine
+Αυτός ο νέος τύπος FSM θα υπολογίζει το παραγοντικό αριθμών μέχρι ένα κατώφλι (π.χ. threshold = 5 → 1!, 2!, 3!, ..., 5!).
+
+🎯 Γιατί είναι εύκολη η υλοποίηση με την προτεινόμενη λύση (πολυμορφισμός + στρατηγικές κλάσεις);
+Χάρη στον καθαρό διαχωρισμό ευθυνών και την εφαρμογή της Open/Closed Principle, μπορούμε απλώς να:
+
+Δημιουργήσουμε μια νέα υποκλάση της AbstractStateMachine.
+
+Υλοποιήσουμε μόνο τις μεθόδους που μας ενδιαφέρουν (start(), execute(), finish()).
+
+Δεν χρειάζεται να τροποποιήσουμε καμία άλλη κλάση του συστήματος (όπως Main, άλλες μηχανές ή τη βασική δομή StateMachine).
+
+✅ Παράδειγμα νέας επέκτασης: FactorialMachine
+class FactorialMachine extends AbstractStateMachine {
+
+    public FactorialMachine(int threshold) {
+        super(threshold);
+    }
+
+    @Override
+    public void start() {
+        System.out.println("Starting to calculate factorials up to " + threshold);
+    }
+
+    @Override
+    public void execute() {
+        System.out.println(counter + "! = " + factorial(counter));
+        counter++;
+    }
+
+    private int factorial(int n) {
+        int result = 1;
+        for (int i = 2; i <= n; i++) {
+            result *= i;
+        }
+        return result;
+    }
+
+    @Override
+    public void finish() {
+        System.out.println("FactorialMachine finished.");
+    }
+}
+🧠 Πώς βοηθά η προτεινόμενη λύση:
+Παράγοντας	Πλεονέκτημα
+Open/Closed Principle	Ο νέος τύπος FSM προστίθεται χωρίς τροποποίηση υπάρχοντος κώδικα.
+Πολυμορφισμός	Η Main χειρίζεται κάθε FSM ομοιόμορφα μέσω της StateMachine διεπαφής.
+Επαναχρησιμοποίηση	Ο έλεγχος του run() βρίσκεται ήδη στην AbstractStateMachine και δεν χρειάζεται επανάληψη.
+Επεκτασιμότητα	Μπορούμε να προσθέσουμε εύκολα FSMs για Fibonacci, primes, κ.λπ.
+Δοκιμασιμότητα	Κάθε FSM μπορεί να δοκιμαστεί ανεξάρτητα με mocking ή unit testing.
+📌 Συμπέρασμα:
+Η χρήση πολυμορφισμού και αφηρημένων/συμβολικών τύπων καθιστά το σύστημα ευέλικτο, επεκτάσιμο και συντηρήσιμο, με σαφή οριοθέτηση ευθυνών. Έτσι, κάθε νέα "λογική μηχανή" προστίθεται με ελάχιστο κόστος και χωρίς παρενέργειες στον υπάρχοντα κώδικα.
+
+Θες να σου δείξω και πώς θα χρησιμοποιούσαμε την FactorialMachine στο main();
+
+
+
+
+Δεν επιλέχθηκε κανένα αρχείο.Δεν επιλέχθηκε κανένα αρχείο.
+ChatGPT can make mistakes. Check important info. See Cookie Preferences.

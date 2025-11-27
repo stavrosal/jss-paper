@@ -1,0 +1,29 @@
+/*
+We want to model Basket teams. Each team has a name
+(string) and players with different roles. There are 3 roles:
+ -defenders
+ -attackers
+ -forwarders
+We want a functions that prints all players' names
+(void), regardless of their role. We also want
+3 functions (one for each role) that get a Player object
+as a parameter and return True/False based on whether the
+player is in the team or not (boolean). Assume that Player
+class is implemented and that all 3 player roles extend this
+class. Assume also that there is a getName() method.
+*/
+
+class Basket{
+	String teamName;
+	List<Player> players;		
+	
+	public void getAllPlayers(){
+		for (Player p : players){
+			System.out.println(p.getName());
+		}
+	}
+	
+	public boolean searchPlayer(Player p){
+		return (players.contains(p));
+	}
+}v

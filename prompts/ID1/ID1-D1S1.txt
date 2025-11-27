@@ -1,0 +1,532 @@
+/* We wish to model a system of a clothing shop. The shop (for now) sells only pants and shirts There are two types of clothing, Vintage and Modern. Each clothing contains a void printInfo method which takes no parameters and prints a message of the type: "A <Type> of <Clothes>" It is worth noting that each clothing shop can sell only one of the clothing types, that means that a Modern Shop cannot sell Vintage clothing and vice versa. */ public abstract class Clothes{ 	public abstract void printInfo(); } public abstract class Shirt extends Clothes{ 	public abstract void printInfo(); } public abstract class Pants extends Clothes{ 	public abstract void printInfo(); } public class VintageShirt extends Shirt{ 	public void printInfo(){ 		System.out.println("A vintage shirt"); 	} } public class ModernShirt extends Shirt{ 	public void printInfo(){ 		System.out.println("A modern shirt"); 	} } public class VintagePants extends Pants{ 	public void printInfo(){ 		System.out.println("A vintage pair of pants"); 	} } public class ModernPants extends Pants{ 	public void printInfo(){ 		System.out.println("A modern pair of pants"); 	} } public class Shop{ 	private List<Clothes> clothing; 	 	public Shop(){ 		this.clothing = new ArrayList<Clothes>(); 	} 	 	public void addShirt(Clothes c){ 		clothing.add(c); 	} 	 	public void addPants(Clothes c){ 		clothing.add(c); 	} } public class MainClass{ 	 	public static void main(String[] args){ 		Shop vintageShop = new Shop(); // Create a Vintage shop 		vintageShop.addShirt(new VintageShirt()); 		vintageShop.addPants(new VintagePants()); 		 		Shop modernShop = new Shop(); // Create a Modern shop 		modernShop.addShirt(new ModernShirt()); 		modernShop.addPants(new ModernPants()); 		 	} } Describe the bad smells you find in this code
+Το ChatGPT είπε:
+Here are the major code smells in the provided design, along with explanations of why they’re problematic and how they relate to common OO design principles.
+________________________________________
+✅ 1. Missing Enforced Shop Type (Violation of Requirements)
+Smell:
+A Shop is supposed to be either Modern or Vintage, but nothing in the code enforces this.
+Why it’s bad:
+Shop does not store or encode its type, so you can do this with no compiler errors:
+Shop vintageShop = new Shop();
+vintageShop.addShirt(new ModernShirt()); // Allowed — but should not be!
+
+This breaks the main requirement and relies entirely on the user's discipline.
+Related to:
+Missing abstraction, Violation of Single Responsibility, Lack of type safety.
+________________________________________
+✅ 2. Duplicated Abstract Methods (printInfo)
+Smell:
+Clothes, Shirt, and Pants all redeclare printInfo() even though it's unchanged.
+Why it's bad:
+Unnecessary duplication increases code clutter and provides no additional abstraction. The subclasses already override printInfo, so keeping it abstract only in Clothes would suffice.
+Related to:
+Duplicate code / Redundant abstraction, Needless hierarchy depth.
+________________________________________
+✅ 3. Misuse of Parameter Types in addShirt and addPants
+Smell:
+The methods receive Clothes instead of Shirt and Pants.
+public void addShirt(Clothes c) { ... }
+
+Why it's bad:
+The method name implies a constraint, but the type signature allows:
+shop.addShirt(new VintagePants()); // Pants passed into addShirt()
+
+This is misleading and unsafe.
+Related to:
+Bad method naming, Leaky abstraction, Liskov Substitution Principle violation.
+________________________________________
+✅ 4. Shop Does Not Use Generics
+Smell:
+The shop stores List<Clothes> with no restriction, even though logically shops should only carry one style (Vintage/Modern).
+Why it's bad:
+You could mix Modern + Vintage in the same shop with no compiler warning.
+Related to:
+Missing generics, Missing type constraints.
+________________________________________
+✅ 5. No cohesion or real purpose in addShirt and addPants
+Smell:
+Both methods do the exact same thing:
+public void addShirt(Clothes c) {
+    clothing.add(c);
+}
+
+public void addPants(Clothes c) {
+    clothing.add(c);
+}
+
+Why it’s bad:
+The methods provide no additional type safety, validation, or behavior. They're redundant.
+Related to:
+Duplicate code, Low cohesion, Bad abstraction.
+________________________________________
+✅ 6. Shirt and Pants are abstract classes even though they add no functionality
+Smell:
+They do not define new behavior, fields, or constraints.
+Why it's bad:
+Abstract classes should enforce structure or provide shared behavior. These do none.
+An interface or just the subclass hierarchy under Clothes would work.
+Related to:
+Unnecessary inheritance, Speculative abstraction.
+________________________________________
+✅ 7. Hardcoded Print Strings (Low Extensibility)
+Smell:
+printInfo() has hardcoded English text:
+System.out.println("A modern pair of pants");
+
+Why it's bad:
+Changing wording, localization, or representation forces changes in every subclass.
+Related to:
+Hardcoding, Poor separation of concerns.
+________________________________________
+✅ 8. Lack of Polymorphic Behavior in Shop
+Smell:
+The shop simply stores items; it doesn't do anything interesting with them.
+Why it's bad:
+It feels like an anemic domain model — behavior is missing. A shop should enforce or encapsulate rules about what it sells.
+Related to:
+Anemic domain model, Low cohesion.
+________________________________________
+🧹 Summary of Bad Smells
+Smell	Explanation
+Missing type enforcement for shop	Breaks core requirement; no constraint that a shop is Vintage/Modern
+Duplicate abstract printInfo	Redundant and unnecessary
+Wrong parameter types in add methods	Allows invalid clothes type to be added
+No generics to represent shop type	Missing compile-time checks
+Duplicate meaningless add methods	They do the same thing
+Over-abstracted inheritance tree	Shirt/Pants abstract classes add nothing
+Hardcoded strings	Not extensible
+Anemic Shop behavior	Does not manage its constraints
+________________________________________
+If you'd like, I can also provide a clean redesigned version using one of these patterns:
+●	Factory Method
+
+●	Abstract Factory
+
+●	Generics-based type-safe Shop
+
+●	Enum-based clothes categories
+
+Just let me know!
+Είπες:
+Which metrics are affected?
+Το ChatGPT είπε:
+Below are the software quality metrics that are negatively affected by the code smells in your design. Each metric is standard in OO analysis (e.g., Chidamber & Kemerer, Martin, Lanza & Marinescu).
+________________________________________
+📉 1. WMC – Weighted Methods per Class (Complexity Metric)
+Affected classes:
+ Clothes, Shirt, Pants, Shop.
+Why:
+ Unnecessary abstract method redeclarations increase method count without adding value. Extra meaningless methods (addShirt + addPants) also inflate WMC.
+Symptoms:
+●	More methods than needed
+
+●	Higher class complexity
+
+●	More effort to maintain
+
+________________________________________
+📉 2. DIT – Depth of Inheritance Tree
+Affected classes:
+ Clothes → Shirt → VintageShirt (depth = 3)
+ Clothes → Pants → VintagePants (depth = 3)
+Why:
+ Inheritance chain is deeper than necessary because Shirt and Pants add no functionality beyond what Clothes has.
+Symptoms:
+●	Deeper trees without purpose cause harder mental model
+
+●	Polymorphism adds no tangible benefit
+
+________________________________________
+📉 3. NOC – Number of Children
+Affected class:
+ Clothes has many subclasses → high NOC.
+Why problematic here:
+ High NOC isn’t inherently bad, but becomes problematic when:
+●	subclasses differ only in print strings
+
+●	no shared behavior is leveraged
+
+●	inheritance is used where composition or data would be better
+
+________________________________________
+📉 4. LCOM – Lack of Cohesion of Methods
+Affected class:
+ Shop.
+Why:
+ addShirt() and addPants() do the exact same thing. No method depends on others, and the class doesn’t enforce its own invariants (Modern/Vintage consistency).
+Symptoms:
+●	Methods don’t relate to a single responsibility
+
+●	Low cohesion → harder to maintain and reason about
+
+________________________________________
+📉 5. CBO – Coupling Between Objects
+Affected classes:
+ Shop coupled to all clothing subclasses via constructor calls in main.
+Why:
+ There is no abstraction for creating clothes (e.g., a factory). So the system is tightly coupled to specific implementations.
+Symptoms:
+●	Adding a new clothing category requires editing many places
+
+●	Code becomes rigid and brittle
+
+________________________________________
+📉 6. SRP / High Responsibility (not a CK metric, but crucial)
+Affected class:
+ Shop.
+Why:
+ Shop is responsible for:
+●	storing clothes
+
+●	type validation (but doesn’t do it)
+
+●	adding items
+
+●	potentially printing items
+
+This violates Single Responsibility Principle, which increases:
+●	complexity
+
+●	change-proneness
+
+●	low cohesion (ties to LCOM)
+
+________________________________________
+📉 7. Lack of Type Safety (not a classic metric, but measurable)
+Affected class:
+ Shop.
+Why:
+ The signature:
+public void addShirt(Clothes c)
+
+allows wrong types (e.g., Pants in addShirt) → reliability and correctness metric drops.
+________________________________________
+📉 8. Code Duplication (measured with duplication metrics)
+Affected classes:
+●	Shirt and Pants: duplicate abstract method declarations
+
+●	All concrete clothing classes: duplicate printInfo format
+
+●	Shop methods do the same thing
+
+This increases:
+●	maintenance effort
+
+●	risk of inconsistency
+
+●	LOC count unnecessarily
+
+________________________________________
+📉 Summary Table
+Metric	Impact
+WMC	Higher due to redundant methods
+DIT	Higher because of unnecessary inheritance depth
+NOC	Inflated without real polymorphic benefit
+LCOM	Low cohesion in Shop
+CBO	High coupling to concrete subclasses
+Code Duplication	High across clothing classes
+Type Safety / Correctness	Low (wrong items can be added)
+SRP	Violated (mostly in Shop)
+________________________________________
+If you'd like, I can follow up with:
+✔ a refactored design that fixes all the metrics,
+ ✔ UML diagrams,
+ ✔ or rewritten code using Abstract Factory, Generics, or Sealed classes (Java 17+).
+Just tell me!
+Είπες:
+Which Design Principle/Pattern can be applied to increase quality of code
+Το ChatGPT είπε:
+Here are the most appropriate and beneficial design principles and patterns that can be applied to improve the quality, safety, and maintainability of this code. Each entry includes why it applies directly to the problems you identified.
+________________________________________
+✅ 1. Abstract Factory Pattern
+Why it's a perfect fit
+You have two "families" of products:
+●	Vintage: VintageShirt, VintagePants
+
+●	Modern: ModernShirt, ModernPants
+
+And the requirement says:
+A shop may only sell clothes from one family (either Modern or Vintage).
+This is exactly what the abstract factory pattern solves:
+●	Enforces family consistency
+
+●	Creates related products without calling concrete constructors
+
+●	Prevents mixing product families at compile time
+
+Sketch:
+public interface ClothesFactory {
+    Shirt createShirt();
+    Pants createPants();
+}
+
+public class VintageFactory implements ClothesFactory {
+    public Shirt createShirt() { return new VintageShirt(); }
+    public Pants createPants() { return new VintagePants(); }
+}
+
+public class ModernFactory implements ClothesFactory {
+    public Shirt createShirt() { return new ModernShirt(); }
+    public Pants createPants() { return new ModernPants(); }
+}
+
+Now Shop receives a factory and can only create a consistent set of clothes.
+________________________________________
+✅ 2. Single Responsibility Principle (SRP)
+Why it applies
+Shop currently has multiple responsibilities:
+●	storing clothes
+
+●	deciding what can be added
+
+●	enforcing style consistency (but it doesn’t actually do it)
+
+●	knowing about all the concrete subclasses
+
+SRP says:
+A class should have one reason to change.
+🟢 Fixing this means:
+●	Shop should only manage inventory
+
+●	Factories should handle what type of clothes are created
+
+●	Types should enforce consistency (not the Shop logic)
+
+________________________________________
+✅ 3. Liskov Substitution Principle (LSP)
+Why it applies
+Currently:
+public void addShirt(Clothes c)
+
+allows passing a Pants object. That violates type expectations.
+LSP says:
+Subtypes must be usable where their base type is expected.
+🟢 Fix:
+public void addShirt(Shirt s)
+public void addPants(Pants p)
+
+And use the Abstract Factory to ensure the right family.
+________________________________________
+✅ 4. Open/Closed Principle (OCP)
+Why it applies
+Right now, adding a new style (e.g., "Casual") means:
+●	modifying main
+
+●	modifying Shop
+
+●	modifying constructors everywhere
+
+OCP states:
+Software should be open for extension, but closed for modification.
+🟢 Abstract Factory ensures you add new types by extending a factory — not by modifying existing code.
+________________________________________
+✅ 5. Favor Composition Over Inheritance
+Why it applies
+This code’s inheritance hierarchy is too deep:
+ Clothes → Shirt → VintageShirt
+But Shirt and Pants add no behavior, violating the intent of inheritance.
+🟢 Alternative:
+●	Use interfaces (IShirt, IPants) instead of empty abstract classes.
+
+●	Reduce inheritance depth unless shared behavior actually exists.
+
+________________________________________
+✅ 6. Interface Segregation Principle
+(Not critical but still applicable)
+The printInfo() method is too generic. Instead of forcing all clothes to "print info," you might:
+●	separate display logic
+
+●	let objects expose data instead of printing directly.
+
+This reduces IO coupling.
+________________________________________
+✅ 7. Factory Method (Optional Alternative)
+If you think Abstract Factory is "too heavy," another option is a simpler Factory Method inside Shop:
+protected Shirt createShirt();
+protected Pants createPants();
+
+Then make:
+class ModernShop extends Shop { ... }
+class VintageShop extends Shop { ... }
+
+This also enforces consistency.
+________________________________________
+🔵 Best Overall Design Fix (recommended combination)
+✔ Abstract Factory Pattern
+ ✔ Use SRP (Shop manages only inventory)
+ ✔ Use proper types (Shirt, Pants)
+ ✔ Reduce unnecessary inheritance depth
+________________________________________
+👍 Final Answer Summary
+To improve this code, the following design principles and patterns should be applied:
+Design Principles
+●	SRP – Single Responsibility Principle
+
+●	LSP – Liskov Substitution Principle
+
+●	OCP – Open/Closed Principle
+
+●	Interface Segregation Principle (optional)
+
+●	Favor Composition Over Inheritance
+
+Design Patterns
+●	Abstract Factory Pattern (best fit)
+
+●	Factory Method Pattern (alternative)
+
+●	Maybe Strategy for print behaviour (optional)
+
+________________________________________
+If you want, I can produce a fully refactored version of your system using the Abstract Factory pattern and show the resulting UML.
+Είπες:
+write code for abstract factory
+Το ChatGPT είπε:
+Below is a clean, complete, and compilable implementation of your clothing shop using the Abstract Factory Pattern, enforcing that each shop can only create clothes from one style family (Vintage or Modern).
+This solves the original problem where a shop could mix Modern and Vintage items.
+________________________________________
+✅ Abstract Factory Pattern Implementation
+1. Product Interfaces
+public interface Shirt {
+    void printInfo();
+}
+
+public interface Pants {
+    void printInfo();
+}
+
+________________________________________
+2. Concrete Products
+Vintage Clothing
+public class VintageShirt implements Shirt {
+    @Override
+    public void printInfo() {
+        System.out.println("A vintage shirt");
+    }
+}
+
+public class VintagePants implements Pants {
+    @Override
+    public void printInfo() {
+        System.out.println("A vintage pair of pants");
+    }
+}
+
+Modern Clothing
+public class ModernShirt implements Shirt {
+    @Override
+    public void printInfo() {
+        System.out.println("A modern shirt");
+    }
+}
+
+public class ModernPants implements Pants {
+    @Override
+    public void printInfo() {
+        System.out.println("A modern pair of pants");
+    }
+}
+
+________________________________________
+3. Abstract Factory
+public interface ClothesFactory {
+    Shirt createShirt();
+    Pants createPants();
+}
+
+________________________________________
+4. Concrete Factories
+Vintage factory
+public class VintageFactory implements ClothesFactory {
+
+    @Override
+    public Shirt createShirt() {
+        return new VintageShirt();
+    }
+
+    @Override
+    public Pants createPants() {
+        return new VintagePants();
+    }
+}
+
+Modern factory
+public class ModernFactory implements ClothesFactory {
+
+    @Override
+    public Shirt createShirt() {
+        return new ModernShirt();
+    }
+
+    @Override
+    public Pants createPants() {
+        return new ModernPants();
+    }
+}
+
+________________________________________
+5. Shop class (depends ONLY on factory, not concrete classes)
+This ensures type safety:
+ ➡️ You CANNOT add Vintage items into a Modern shop.
+import java.util.ArrayList;
+import java.util.List;
+
+public class Shop {
+    private final ClothesFactory factory;
+    private final List<Shirt> shirts = new ArrayList<>();
+    private final List<Pants> pants = new ArrayList<>();
+
+    public Shop(ClothesFactory factory) {
+        this.factory = factory;
+    }
+
+    public void addShirt() {
+        shirts.add(factory.createShirt());
+    }
+
+    public void addPants() {
+        pants.add(factory.createPants());
+    }
+
+    public void printInventory() {
+        shirts.forEach(Shirt::printInfo);
+        pants.forEach(Pants::printInfo);
+    }
+}
+
+________________________________________
+6. Main Class
+public class MainClass {
+    public static void main(String[] args) {
+
+        // Create a vintage shop
+        Shop vintageShop = new Shop(new VintageFactory());
+        vintageShop.addShirt();
+        vintageShop.addPants();
+        vintageShop.printInventory();
+
+        // Create a modern shop
+        Shop modernShop = new Shop(new ModernFactory());
+        modernShop.addShirt();
+        modernShop.addPants();
+        modernShop.printInventory();
+    }
+}
+
+________________________________________
+✅ What This Achieves
+✔ Enforces consistency
+A shop gets a factory → only one type of ClothesFamily can ever be created.
+✔ Remove unnecessary inheritance
+Replaces the big inheritance tree with clean interfaces.
+✔ Uses Abstract Factory properly
+Families of related objects (Vintage/Modern) are created through a factory.
+✔ Improves cohesion and type safety
+The Shop no longer receives arbitrary Clothes. It constructs them via the factory, ensuring consistency.
+________________________________________
+If you want, I can also give you:
+🔹 UML diagram
+ 🔹 A version using Java sealed classes
+ 🔹 A version using Generics to enforce type-safe shop categories at compile time
+Just ask!
+

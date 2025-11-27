@@ -1,0 +1,180 @@
+/* We wish to model a system of a clothing shop. The shop (for now) sells only pants and shirts There are two types of clothing, Vintage and Modern. Each clothing contains a void printInfo method which takes no parameters and prints a message of the type: "A <Type> of <Clothes>" It is worth noting that each clothing shop can sell only one of the clothing types, that means that a Modern Shop cannot sell Vintage clothing and vice versa. */ public abstract class Clothes{ 	public abstract void printInfo(); } public abstract class Shirt extends Clothes{ 	public abstract void printInfo(); } public abstract class Pants extends Clothes{ 	public abstract void printInfo(); } public class VintageShirt extends Shirt{ 	public void printInfo(){ 		System.out.println("A vintage shirt"); 	} } public class ModernShirt extends Shirt{ 	public void printInfo(){ 		System.out.println("A modern shirt"); 	} } public class VintagePants extends Pants{ 	public void printInfo(){ 		System.out.println("A vintage pair of pants"); 	} } public class ModernPants extends Pants{ 	public void printInfo(){ 		System.out.println("A modern pair of pants"); 	} } public class Shop{ 	private List<Clothes> clothing; 	 	public Shop(){ 		this.clothing = new ArrayList<Clothes>(); 	} 	 	public void addShirt(Clothes c){ 		clothing.add(c); 	} 	 	public void addPants(Clothes c){ 		clothing.add(c); 	} } public class MainClass{ 	 	public static void main(String[] args){ 		Shop vintageShop = new Shop(); // Create a Vintage shop 		vintageShop.addShirt(new VintageShirt()); 		vintageShop.addPants(new VintagePants()); 		 		Shop modernShop = new Shop(); // Create a Modern shop 		modernShop.addShirt(new ModernShirt()); 		modernShop.addPants(new ModernPants()); 		 	} } Descibe the smells you find Describe the metrics affected Which pattern or principle can be applied to make code of better quality? Write code for the pattern or principle Suggest one extension mechanism
+Το ChatGPT είπε:
+Below is a structured analysis of the code, the smells, the violated metrics, the design principle/pattern that can improve it, an improved version of the code, and an extension mechanism.
+________________________________________
+✅ 1. Code Smells Present
+1.1 Type Check/Conditionals by Convention Instead of Design
+The Shop class is supposed to be either Vintage or Modern, yet this is enforced only by comments — no type safety prevents adding Modern clothes to a Vintage shop.
+➡️ Smell: Missing Polymorphism, Comments instead of code, Design By Convention
+________________________________________
+1.2 Wrong Abstraction Level in Shop
+addShirt(Clothes c) and addPants(Clothes c) accept any Clothes object, not specifically shirts or pants.
+➡️ Smell: Leaky Abstraction, Weak Typing, Inappropriate Interface
+________________________________________
+1.3 Code Duplication
+Every clothing class implements printInfo() with hard-coded strings; there is repeated structure.
+➡️ Smell: Duplicated Code
+________________________________________
+1.4 Violation of the Single Responsibility Principle
+Shop is responsible for:
+●	storing clothes
+
+●	validating clothing type (but it doesn’t!)
+
+●	behaving as either a Vintage shop or Modern shop (but no enforcement exists)
+
+➡️ Smell: SRP Violation, Low Cohesion
+________________________________________
+1.5 Open/Closed Violation
+To support a new clothing type (e.g., Sports, Formal), or a new variant (e.g., FuturisticShirt), you would need to modify the Shop class logic.
+➡️ Smell: OCP Violation, Rigid Code
+________________________________________
+✅ 2. Metrics Affected
+2.1 High Coupling
+Shop must know concrete classes like VintageShirt, ModernPants, etc.
+Metric: Coupling Between Objects (CBO) → increased.
+________________________________________
+2.2 Low Cohesion
+Shop is doing multiple responsibilities without any boundaries.
+Metric: Lack of Cohesion in Methods (LCOM) → increased.
+________________________________________
+2.3 Large Number of Children (NOC)
+You have many subclasses with little behavior added; duplication causes unnecessary subclass explosion.
+Metrics: DIT, NOC → impacted due to deep inheritance with little gain.
+________________________________________
+2.4 Maintainability Index
+Duplicated strings + missing type-safety + weak abstractions → reduces maintainability.
+________________________________________
+✅ 3. Pattern/Principle That Improves Design
+The best fit:
+⭐ Abstract Factory Pattern
+Why?
+●	A shop should produce items of one family (Vintage OR Modern).
+
+●	The factory ensures family consistency (vintage shop cannot produce modern clothes).
+
+●	Removes the need for runtime checks — correctness enforced by the type system.
+
+________________________________________
+✅ 4. Refactored Code Using the Abstract Factory Pattern
+________________________________________
+Abstract Products
+public interface Shirt {
+    void printInfo();
+}
+
+public interface Pants {
+    void printInfo();
+}
+
+________________________________________
+Concrete Products
+public class VintageShirt implements Shirt {
+    public void printInfo() {
+        System.out.println("A vintage shirt");
+    }
+}
+
+public class ModernShirt implements Shirt {
+    public void printInfo() {
+        System.out.println("A modern shirt");
+    }
+}
+
+public class VintagePants implements Pants {
+    public void printInfo() {
+        System.out.println("A vintage pair of pants");
+    }
+}
+
+public class ModernPants implements Pants {
+    public void printInfo() {
+        System.out.println("A modern pair of pants");
+    }
+}
+
+________________________________________
+Abstract Factory
+public interface ClothesFactory {
+    Shirt createShirt();
+    Pants createPants();
+}
+
+________________________________________
+Concrete Factories
+public class VintageFactory implements ClothesFactory {
+    public Shirt createShirt() { return new VintageShirt(); }
+    public Pants createPants() { return new VintagePants(); }
+}
+
+public class ModernFactory implements ClothesFactory {
+    public Shirt createShirt() { return new ModernShirt(); }
+    public Pants createPants() { return new ModernPants(); }
+}
+
+________________________________________
+Shop that uses the factory
+public class Shop {
+    private List<Object> inventory;
+    private ClothesFactory factory;
+
+    public Shop(ClothesFactory factory) {
+        this.factory = factory;
+        inventory = new ArrayList<>();
+    }
+
+    public void addShirt() {
+        inventory.add(factory.createShirt());
+    }
+
+    public void addPants() {
+        inventory.add(factory.createPants());
+    }
+}
+
+________________________________________
+Main
+public class Main {
+    public static void main(String[] args) {
+        Shop vintageShop = new Shop(new VintageFactory());
+        vintageShop.addShirt();
+        vintageShop.addPants();
+
+        Shop modernShop = new Shop(new ModernFactory());
+        modernShop.addShirt();
+        modernShop.addPants();
+    }
+}
+
+________________________________________
+✅ 5. Extension Mechanism
+A simple extension mechanism:
+Add a new Clothing Style Family
+For example, Futuristic style.
+Steps:
+1.	Implement:
+
+public class FuturisticShirt implements Shirt {...}
+public class FuturisticPants implements Pants {...}
+
+2.	Create the factory:
+
+public class FuturisticFactory implements ClothesFactory {
+    public Shirt createShirt() { return new FuturisticShirt(); }
+    public Pants createPants() { return new FuturisticPants(); }
+}
+
+3.	Use it:
+
+Shop futuristicShop = new Shop(new FuturisticFactory());
+
+→ No existing code changes required → OCP compliant.
+________________________________________
+🎉 Summary
+Problem	Solution
+Weak type safety	Abstract Factory enforces product families
+Duplicated code	Clear product interfaces
+SRP violations	Shop only stores clothes, Factory creates clothes
+High coupling	Decoupled creation from use
+Hard to extend	New families added via new factory
+

@@ -1,0 +1,308 @@
+Skip to content
+Chat history
+
+This is a copy of a conversation between ChatGPT & Anonymous.
+
+Report conversation
+You said:
+Uploaded a file
+Περιγράψτε τις κακές οσμές (Bad Smells) που εντοπίσατε.
+ChatGPT said:
+Από την ανάλυση της κλάσης Wedding στον κώδικα, εντοπίζονται αρκετά "bad smells" (κακοσχεδιασμένα σημεία που υποδηλώνουν την ανάγκη για αναδιάρθρωση). Ακολουθούν τα κυριότερα:
+
+1. Data Clumps (Συστάδες Δεδομένων)
+Η λογική υπολογισμού κόστους για φαγητό και φωτογραφίες εξαρτάται επανειλημμένα από την ίδια πληροφορία: τον αριθμό των ατόμων και τα χαρακτηριστικά τους (vegan/μη-vegan). Αυτό δείχνει ότι ίσως χρειάζεται να δημιουργηθεί ξεχωριστή κλάση π.χ. Catering ή WeddingCostCalculator.
+
+2. Primitive Obsession
+Η χρήση πρωτογενών τύπων (π.χ. int vegans, double cost) αντί για αφηρημένες κλάσεις ή τύπους οδηγεί σε δυσκολότερη συντήρηση. Θα μπορούσε να γίνει εισαγωγή κλάσεων όπως Cost ή PersonType.
+
+3. Long Method
+Η μέθοδος calculateFoodCost περιέχει πάρα πολλά βήματα:
+
+Καταμέτρηση vegan
+
+Υπολογισμός μη-vegan
+
+Υπολογισμός κόστους με βάση συνθήκες
+
+Κάθε υποενότητα θα μπορούσε να εξάγεται σε δική της βοηθητική μέθοδο για καθαρότερο κώδικα.
+
+4. Feature Envy
+Η μέθοδος calculateFoodCost φαίνεται να εξαρτάται υπερβολικά από την κλάση Person (καλεί τη isVegan()), γεγονός που μπορεί να σημαίνει ότι η λογική ανήκει περισσότερο σε μια υπηρεσία σχετική με τη Person ή σε εξωτερική κλάση υπεύθυνη για κόστη.
+
+5. Possible NullPointerException
+Η λίστα people δεν φαίνεται να αρχικοποιείται. Αν κάποιος καλέσει addPerson() χωρίς αρχικοποίηση, θα προκληθεί σφάλμα.
+
+List<Person> people = new ArrayList<>();
+6. Duplication
+Η λογική people.size() <= N επαναλαμβάνεται με διαφορετικά όρια. Καλό θα ήταν να υπάρχει κοινή λογική/μέθοδος για τέτοιες κλιμακώσεις.
+
+7. Typo/Mistake
+Στη μέθοδο calcPhotosCost() υπάρχει λάθος:
+
+cost = people.size * 0.75; // Λάθος: size είναι μέθοδος, όχι πεδίο
+Πρέπει να είναι:
+
+cost = people.size() * 0.75;
+Αν θέλεις, μπορώ να σου προτείνω refactored έκδοση της κλάσης ή να εντοπίσω ακόμα βαθύτερα σημεία για βελτίωση. Θες να το κάνουμε; 
+
+You said:
+Περιγράψτε τις μετρικές (metrics) που επηρεάζονται.
+ChatGPT said:
+Οι "bad smells" που εντοπίστηκαν στην κλάση Wedding επηρεάζουν άμεσα ή έμμεσα διάφορες μετρικές ποιότητας λογισμικού. Ακολουθεί αναλυτική περιγραφή των μετρικών που επηρεάζονται:
+
+1. LOC (Lines of Code) – Γραμμές Κώδικα
+Επηρεάζεται αρνητικά λόγω της ύπαρξης μεγάλων μεθόδων και επαναλαμβανόμενου κώδικα.
+
+Η απουσία επαναχρησιμοποίησης (reusability) αυξάνει τον αριθμό γραμμών.
+
+2. Cyclomatic Complexity – Κυκλωματική Πολυπλοκότητα
+Αυξάνεται σημαντικά στις μεθόδους calculateFoodCost και calcPhotosCost, επειδή περιέχουν πολλούς κλάδους if/else.
+
+Υψηλή πολυπλοκότητα καθιστά δύσκολη τη συντήρηση και τον έλεγχο (testing).
+
+3. Cohesion – Συνοχή
+Μειωμένη συνοχή της κλάσης Wedding, επειδή συνδυάζει λογική για την οργάνωση ανθρώπων, υπολογισμό κόστους catering και φωτογράφισης.
+
+Η συνοχή μετράει το κατά πόσο οι μέθοδοι μιας κλάσης σχετίζονται στενά με την ευθύνη της.
+
+4. Coupling – Σύζευξη
+Αυξημένη σύζευξη με την κλάση Person, ειδικά αν ο Wedding γνωρίζει εσωτερικά χαρακτηριστικά όπως isVegan.
+
+Η υψηλή σύζευξη σημαίνει ότι οι αλλαγές στην Person μπορεί να προκαλέσουν αλλαγές στην Wedding.
+
+5. Maintainability Index – Δείκτης Συντηρησιμότητας
+Μειώνεται λόγω μεγάλων και σύνθετων μεθόδων, έλλειψης modularity, και υψηλής κυκλωματικής πολυπλοκότητας.
+
+Δυσκολεύει τη συντήρηση, την προσθήκη νέων χαρακτηριστικών ή τον εντοπισμό σφαλμάτων.
+
+6. Duplication (Code Duplication Metric)
+Υψηλή επανάληψη λογικής, π.χ. χρήση people.size() σε πολλαπλά σημεία χωρίς εξαγωγή κοινής λογικής.
+
+Αυξάνει τον κίνδυνο σφαλμάτων και το κόστος συντήρησης.
+
+7. Lack of Encapsulation / Data Hiding
+Η μη-αρχικοποιημένη λίστα people και η άμεση χρήση της υπονομεύουν τον έλεγχο προσβασιμότητας.
+
+Δεν αξιοποιείται σωστά η πληροφοριακή απόκρυψη (data hiding), κάτι που μειώνει την ευρωστία (robustness).
+
+Αν θέλεις, μπορώ να σου δείξω πώς θα βελτιώνονταν αυτές οι μετρικές με ένα refactored παράδειγμα. Θες να το προχωρήσουμε;
+
+You said:
+Ονοματίστε ποια σχεδιαστική αρχή ή πρότυπο σχεδίασης θα μπορούσε να εφαρμοστεί για την βελτίωση της ποιότητας του κώδικα.
+ChatGPT said:
+Για να βελτιωθεί η ποιότητα του κώδικα της κλάσης Wedding, μπορούν να εφαρμοστούν σχεδιαστικές αρχές (design principles) και πρότυπα σχεδίασης (design patterns). Ακολουθούν οι πιο κατάλληλες:
+
+✅ Σχεδιαστικές Αρχές (Design Principles)
+1. Single Responsibility Principle (SRP)
+"Μια κλάση πρέπει να έχει έναν και μόνο λόγο αλλαγής."
+
+Η Wedding ασχολείται με πολλές ευθύνες: διαχείριση καλεσμένων, υπολογισμός κόστους φαγητού, υπολογισμός κόστους φωτογράφισης.
+
+✅ Βελτίωση: Διαχωρισμός σε επιμέρους κλάσεις όπως:
+
+CateringCostCalculator
+
+PhotographyCostCalculator
+
+2. Open/Closed Principle (OCP)
+"Οι οντότητες του λογισμικού πρέπει να είναι ανοικτές για επέκταση αλλά κλειστές για τροποποίηση."
+
+Αν αλλάξει ο τρόπος υπολογισμού κόστους, απαιτείται τροποποίηση της Wedding.
+
+✅ Βελτίωση: Χρήση στρατηγικής (βλ. παρακάτω) για να επιτρέπεται επέκταση χωρίς τροποποίηση.
+
+3. Encapsulation – Ενθυλάκωση
+Η λίστα people είναι δημόσιας πρόσβασης χωρίς εγγυήσεις αρχικοποίησης.
+
+✅ Βελτίωση: Ιδιωτική μεταβλητή με προστατευμένες προσβάσεις μέσω getter/setter και σωστή αρχικοποίηση.
+
+4. Don't Repeat Yourself (DRY)
+Επαναλαμβανόμενος κώδικας για μέτρηση people.size() και υπολογισμό κόστους.
+
+✅ Βελτίωση: Εξαγωγή κοινής λογικής σε βοηθητικές μεθόδους.
+
+✅ Πρότυπα Σχεδίασης (Design Patterns)
+1. Strategy Pattern
+Χρήσιμο όταν θέλουμε να αλλάξουμε συμπεριφορά υπολογισμού κόστους δυναμικά.
+
+Μπορούμε να έχουμε interface CostCalculator και υλοποιήσεις για CateringCostCalculator, PhotographyCostCalculator, κ.ά.
+
+✅ Βελτίωση: Η Wedding δεν θα γνωρίζει πώς υπολογίζεται το κόστος — απλά θα ζητάει από την στρατηγική να το κάνει.
+
+2. Factory Pattern
+Για δημιουργία διαφορετικών τύπων κόστους χωρίς η Wedding να γνωρίζει τις λεπτομέρειες κατασκευής.
+
+✅ Βελτίωση: Επιτρέπει δημιουργία διαφορετικών πολιτικών υπολογισμού (π.χ. μενού εποχής, premium, κλπ.)
+
+3. Builder Pattern (αν κλάση μεγαλώσει πολύ)
+Αν η Wedding αποκτήσει πολλά πεδία (π.χ. catering, μουσική, φωτισμός), τότε η δημιουργία της μπορεί να γίνει πιο καθαρή με WeddingBuilder.
+
+Αν θέλεις, μπορώ να σου δείξω πώς να εφαρμόσουμε το Strategy Pattern στον υπολογισμό του κόστους. Θες να το υλοποιήσουμε μαζί;
+
+You said:
+Γράψτε τον κώδικα μετά την εφαρμογή της λύσης που επιλέξατε
+ChatGPT said:
+Ακολουθεί ανασχεδιασμένος κώδικας με εφαρμογή των αρχών Single Responsibility και του Strategy Pattern, ώστε να απομονωθεί η λογική υπολογισμού κόστους από την κλάση Wedding.
+
+🔧 Δομή Σχεδίασης
+Interface: CostCalculator
+
+Υλοποιήσεις:
+
+CateringCostCalculator
+
+PhotographyCostCalculator
+
+Κλάση: Wedding, η οποία χρησιμοποιεί τις στρατηγικές.
+
+📁 Person.java
+public class Person {
+    private boolean vegan;
+
+    public Person(boolean vegan) {
+        this.vegan = vegan;
+    }
+
+    public boolean isVegan() {
+        return vegan;
+    }
+}
+📁 CostCalculator.java
+import java.util.List;
+
+public interface CostCalculator {
+    double calculateCost(List<Person> people);
+}
+📁 CateringCostCalculator.java
+import java.util.List;
+
+public class CateringCostCalculator implements CostCalculator {
+    @Override
+    public double calculateCost(List<Person> people) {
+        int vegans = 0;
+        for (Person p : people) {
+            if (p.isVegan()) {
+                vegans++;
+            }
+        }
+        int nonVegans = people.size() - vegans;
+
+        if (people.size() <= 500) {
+            return nonVegans * 3 + vegans * 3.5;
+        } else {
+            return nonVegans * 2 + vegans * 2.5;
+        }
+    }
+}
+📁 PhotographyCostCalculator.java
+import java.util.List;
+
+public class PhotographyCostCalculator implements CostCalculator {
+    @Override
+    public double calculateCost(List<Person> people) {
+        int n = people.size();
+        if (n <= 600) {
+            return n * 1.0;
+        } else {
+            return n * 0.75;
+        }
+    }
+}
+📁 Wedding.java
+import java.util.ArrayList;
+import java.util.List;
+
+public class Wedding {
+    private String venue;
+    private List<Person> people;
+    private CostCalculator cateringCalculator;
+    private CostCalculator photographyCalculator;
+
+    public Wedding(String venue, CostCalculator catering, CostCalculator photography) {
+        this.venue = venue;
+        this.people = new ArrayList<>();
+        this.cateringCalculator = catering;
+        this.photographyCalculator = photography;
+    }
+
+    public void addPerson(Person p) {
+        this.people.add(p);
+    }
+
+    public double getCateringCost() {
+        return cateringCalculator.calculateCost(people);
+    }
+
+    public double getPhotographyCost() {
+        return photographyCalculator.calculateCost(people);
+    }
+
+    public double getTotalCost() {
+        return getCateringCost() + getPhotographyCost();
+    }
+}
+✅ Οφέλη του Refactoring
+Χαμηλή σύζευξη: Το Wedding δεν εξαρτάται από λεπτομέρειες υλοποίησης.
+
+Υψηλή συνοχή: Κάθε κλάση έχει μία και μόνο ευθύνη.
+
+Επεκτασιμότητα: Νέες στρατηγικές υπολογισμού προστίθενται εύκολα.
+
+Μειωμένη πολυπλοκότητα και επαναχρησιμοποίηση.
+
+Θες να σου δείξω και ένα παράδειγμα χρήσης (main method) για το πώς καλείται ο παραπάνω κώδικας;
+
+You said:
+Περιγράψτε μία πιθανή επέκταση του συστήματος και γιατί η λύση που προτείνατε βοηθάει στην ευκολότερη υλοποίηση της.
+ChatGPT said:
+✅ Πιθανή Επέκταση του Συστήματος
+Προσθήκη νέου τύπου υπολογισμού κόστους:
+Π.χ., θέλουμε να υπολογίζουμε και κόστος μουσικής/ψυχαγωγίας για τον γάμο, ανάλογα με τον αριθμό ατόμων και τον τύπο συγκροτήματος.
+
+🔧 Παράδειγμα νέας απαίτησης:
+Αν υπάρχουν πάνω από 300 άτομα, το κόστος μουσικής είναι 800€.
+Αλλιώς, είναι 500€. Επιπλέον, αν ζητείται live band, προστίθενται άλλα 200€.
+
+🆕 Υλοποίηση με την υπάρχουσα στρατηγική:
+📁 EntertainmentCostCalculator.java
+import java.util.List;
+
+public class EntertainmentCostCalculator implements CostCalculator {
+    private boolean hasLiveBand;
+
+    public EntertainmentCostCalculator(boolean hasLiveBand) {
+        this.hasLiveBand = hasLiveBand;
+    }
+
+    @Override
+    public double calculateCost(List<Person> people) {
+        double baseCost = (people.size() > 300) ? 800 : 500;
+        return hasLiveBand ? baseCost + 200 : baseCost;
+    }
+}
+📁 Χρήση στη Wedding.java ή νέα κλάση:
+Μπορείς:
+
+να προσθέσεις και τρίτο πεδίο entertainmentCalculator στο Wedding
+
+ή να δημιουργήσεις νέα κλάση WeddingCostSummary για σύνθεση όλων των επιμέρους στρατηγικών.
+
+✅ Γιατί η λύση που προτάθηκε βοηθάει στην υλοποίηση:
+Πλεονέκτημα	Περιγραφή
+Επεκτασιμότητα (Open/Closed Principle)	Προστίθενται νέοι υπολογισμοί χωρίς να αλλάζει καθόλου η κλάση Wedding.
+Αντικατάσταση στρατηγικής	Μπορείς εύκολα να αλλάξεις υπολογισμούς (π.χ. premium catering) μόνο αλλάζοντας στρατηγία.
+Χαμηλή σύζευξη	Το Wedding δεν γνωρίζει τίποτα για τη λογική κάθε κόστους. Απλώς την "χρησιμοποιεί".
+Testability	Κάθε στρατηγία μπορεί να τεσταριστεί ανεξάρτητα (μονάδες).
+Επαναχρησιμοποίηση	Οποιαδήποτε στρατηγική μπορεί να επαναχρησιμοποιηθεί και σε άλλες εφαρμογές.
+Θες να σου δείξω και το main() που χρησιμοποιεί όλες τις στρατηγικές μαζί για πλήρη υπολογισμό κόστους γάμου;
+
+Shop smarter this season
+Let ChatGPT do the digging for you, with in-depth research into the best deals and gifts.
+
+Try it
+
+
+
+Δεν επιλέχθηκε κανένα αρχείο.Δεν επιλέχθηκε κανένα αρχείο.
+ChatGPT can make mistakes. Check important info. See Cookie Preferences.

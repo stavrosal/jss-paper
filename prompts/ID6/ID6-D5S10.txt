@@ -1,0 +1,411 @@
+/*
+We want to model Wedding events. Each wedding will take place in a venue (String)
+and will have a List of people (assume People class is already implemented).
+Each wedding has food catered to the attendants, where the total cost is calculated
+by the catering company. Specifically, each person is entitled to one meal, which
+costs 3€ if its basic, and 3.5€ if its vegan. If there are more than 500 attendants
+then the prices are -1 / person (that means 2€/basic and 2.5€/vegans). The wedding also
+has a photographer that is paid based on the attendants. The base price is 1€/person but
+if there are more than 600 attendants then the price drops to 0.75€/person.
+*/
+class Wedding{
+    String venue;
+    
+    List<Person> people;
+    
+    public void addPerson(Person p){
+        this.people.add(p);
+    }
+    
+    public double calculateFoodCost(){
+        int vegans = 0;
+        for (Person p : people){
+            if (p.isVegan()){
+                vegans += 1;
+            }
+        }
+        
+        int non_vegans = people.size() - vegans;
+        
+        double total; // total cost
+        if (people.size() <= 500){
+            total = non_vegans * 3 + vegans * 3.5;
+        }
+        else{
+            total = non_vegans * 2 + vegans * 2.5;
+        }
+        
+        return total;
+    }
+    
+    public void calcPhotosCost(){
+        double cost;
+        if (people.size() <= 600){
+            cost = people.size() * 1;
+        }
+        else{
+            cost = people.size * 0.75;
+        }
+        
+        return cost;
+    }
+         
+}
+E10.java
+Εμφάνιση E10.java.
+bad smells ονομα και 1-2 σειρες που εντοπίζεταιHere are the identified "bad smells" in the provided Wedding class code, along with where they occur and a brief explanation:
+
+Inconsistent Method Naming
+Location: Method calcPhotosCost vs. calculateFoodCost
+Issue: The method names are inconsistent in their naming convention. calculateFoodCost uses the full word "calculate," while calcPhotosCost uses the abbreviation "calc." Consistent naming improves readability and maintainability.
+
+Incorrect Method Return Type
+Location: Method calcPhotosCost (returns void instead of double)
+Issue: The method calcPhotosCost is declared with a void return type but attempts to return a double value (cost). This will cause a compilation error, as the return type does not match the returned value.
+
+Uninitialized List
+Location: List<Person> people;
+Issue: The people list is declared but not initialized, which will cause a NullPointerException when addPerson is called (e.g., this.people.add(p)). The list should be initialized,
+
+Interruptedοχσι issueIt seems you meant "όχι issue" (Greek for "not issue") or perhaps you're referring to the issues identified in the previous response about the Wedding class. Since you asked for "bad smells" and their locations, I'll clarify and address any potential misunderstanding, focusing on the code smells already identified and ensuring no new issues are introduced. If you meant something else by "οχσι issue," please clarify, and I'll tailor the response accordingly.
+Clarified Bad Smells in Wedding Class
+Here are the three identified code smells from the Wedding class, with their locations and concise explanations:
+
+Inconsistent Method Naming
+Location: calcPhotosCost (line where method is defined) vs. calculateFoodCost (line where method is defined)
+Explanation: The method calcPhotosCost uses an abbreviated "calc," while calculateFoodCost uses the full word "calculate." Consistent naming (e.g., calculatePhotosCost) enhances code readability and maintainability.
+
+Incorrect Method Return Type
+Location: calcPhotosCost method (line with void return type and return cost;)
+Explanation: The method is declared as void but attempts to return a double (cost). This causes a compilation error. The return type should be double to match the returned value, similar to calculateFoodCost.
+
+Uninitialized List
+Location: List<Person> people; (line where field is declared)
+Explanation: The people field is not initialized, leading to a NullPointerException when addPerson calls people.add(p). It should be initialized, e.g., List<Person> people = new ArrayList<>();.
+
+
+Additional Notes
+
+No other major code smells (e.g., duplicated code, magic numbers, or complex logic) are present in this short code snippet, assuming Person class and its isVegan() method are correctly implemented elsewhere.
+If you meant "οχσι issue" as "no issues" or something else, please confirm. For example, if you're asking to fix these issues or to check for additional problems, I can provide corrected code or further analysis.
+
+Optional: Suggested Fixes
+If you'd like, I can provide a corrected version of the Wedding class addressing these smells. For example:
+Javaclass Wedding {
+    String venue;
+    List<Person> people = new ArrayList<>(); // Initialize list
+
+    public void addPerson(Person p) {
+        this.people.add(p);
+    }
+
+    public double calculateFoodCost() {
+        int vegans = 0;
+        for (Person p : people) {
+            if (p.isVegan()) {
+                vegans += 1;
+            }
+        }
+        int nonVegans = people.size() - vegans;
+        double total = (people.size() <= 500)
+                ? nonVegans * 3 + vegans * 3.5
+                : nonVegans * 2 + vegans * 2.5;
+        return total;
+    }
+
+    public double calculatePhotosCost() { // Consistent naming, correct return type
+        return (people.size() <= 600)
+                ? people.size() * 1
+                : people.size() * 0.75;
+    }
+}
+This version fixes the return type, initializes the list, and uses consistent naming. Let me know if you want this or further analysis!κι αλλα bad smellsTo identify additional "bad smells" in the provided Wedding class beyond the three already mentioned (inconsistent method naming, incorrect return type, and uninitialized list), I'll analyze the code further for potential issues related to code quality, maintainability, or design. Below are additional bad smells, each with the name, location, and a one- or two-line explanation, as requested.
+Additional Bad Smells in Wedding Class
+
+Magic Numbers
+Location: calculateFoodCost (lines with 500, 3, 3.5, 2, 2.5) and calcPhotosCost (lines with 600, 1, 0.75)
+Explanation: Hard-coded values like 500, 3, 3.5, 2, 2.5, 600, 1, and 0.75 lack context and make the code harder to maintain. Constants with descriptive names should be used instead.
+
+Primitive Obsession
+Location: calculateFoodCost (use of int for vegans and non_vegans, and double for total)
+Explanation: Using primitive types for counts and costs misses opportunities to encapsulate related logic (e.g., meal types and their costs) into a dedicated class or enum, improving clarity and flexibility.
+
+Long Method
+Location: calculateFoodCost (method body)
+Explanation: The method mixes counting logic (loop for vegans) with cost calculation logic. Splitting it into smaller methods (e.g., one to count vegans, another for cost) would improve readability and reusability.
+
+
+Notes
+
+These smells focus on improving maintainability and design. For example, magic numbers could be replaced with constants like private static final double BASIC_MEAL_COST = 3.0;, and the vegan-counting logic could be extracted into a separate method.
+If you want more smells or a specific focus (e.g., performance, design patterns), please let me know. Alternatively, I can provide a refactored version of the code addressing all identified smells (the original three plus these three). For example:
+
+Javaclass Wedding {
+    private static final int LARGE_WEDDING_THRESHOLD = 500;
+    private static final double BASIC_MEAL_COST = 3.0;
+    private static final double VEGAN_MEAL_COST = 3.5;
+    private static final double DISCOUNTED_BASIC_MEAL_COST = 2.0;
+    private static final double DISCOUNTED_VEGAN_MEAL_COST = 2.5;
+    private static final int LARGE_PHOTO_THRESHOLD = 600;
+    private static final double PHOTO_COST_PER_PERSON = 1.0;
+    private static final double DISCOUNTED_PHOTO_COST_PER_PERSON = 0.75;
+
+    String venue;
+    List<Person> people = new ArrayList<>();
+
+    public void addPerson(Person p) {
+        this.people.add(p);
+    }
+
+    public double calculateFoodCost() {
+        int vegans = countVegans();
+        int nonVegans = people.size() - vegans;
+        boolean isLargeWedding = people.size() > LARGE_WEDDING_THRESHOLD;
+        double basicCost = isLargeWedding ? DISCOUNTED_BASIC_MEAL_COST : BASIC_MEAL_COST;
+        double veganCost = isLargeWedding ? DISCOUNTED_VEGAN_MEAL_COST : VEGAN_MEAL_COST;
+        return nonVegans * basicCost + vegans * veganCost;
+    }
+
+    private int countVegans() {
+        int vegans = 0;
+        for (Person p : people) {
+            if (p.isVegan()) {
+                vegans++;
+            }
+        }
+        return vegans;
+    }
+
+    public double calculatePhotosCost() {
+        double costPerPerson = people.size() > LARGE_PHOTO_THRESHOLD
+                ? DISCOUNTED_PHOTO_COST_PER_PERSON
+                : PHOTO_COST_PER_PERSON;
+        return people.size() * costPerPerson;
+    }
+}
+This refactored version addresses all six smells by using constants, extracting logic, and fixing the return type and naming. Let me know if you want to explore more smells, specific fixes, or have other concerns!Περιγράψτε τις μετρικές (metrics) που επηρεάζονται.
+*Οι "bad smells" που εντοπίστηκαν στην κλάση Wedding επηρεάζουν διάφορες μετρικές ποιότητας κώδικα, οι οποίες χρησιμοποιούνται για την αξιολόγηση της αναγνωσιμότητας, συντηρησιμότητας και γενικής ποιότητας του κώδικα. Παρακάτω περιγράφονται οι μετρικές που επηρεάζονται από τα έξι εντοπισμένα bad smells, μαζί με σύντομη εξήγηση για κάθε μία:
+
+Inconsistent Method Naming
+Μετρική που επηρεάζεται: Αναγνωσιμότητα (Readability)
+Περιγραφή: Η ασυνεπής ονοματολογία (calcPhotosCost vs. calculateFoodCost) μειώνει την αναγνωσιμότητα, καθώς οι προγραμματιστές πρέπει να ερμηνεύσουν διαφορετικά στυλ ονομασίας. Αυτό επηρεάζει τη μετρική αναγνωσιμότητας, που μετριέται συχνά μέσω εργαλείων όπως το Code Climate ή με κατευθυντήριες γραμμ ਜ
+
+Incorrect Method Return Type
+Μετρική που επηρεάζεται: Σωστότητα (Correctness)
+Περιγραφή: Η μέθοδος calcPhotosCost έχει λανθασμένο τύπο επιστροφής (void αντί για double), που προκαλεί σφάλμα μεταγλώττισης. Αυτό επηρεάζει τη μετρική σωστότητας, καθώς ο κώδικας δεν εκτελείται σωστά, μειώνοντας τη λειτουργικότητα και την αξιοπιστία του.
+
+Uninitialized List
+Μετρική που επηρεάζεται: Αξιοπιστία (Reliability)
+Περιγραφή: Η λίστα people δεν έχει αρχικοποιηθεί, οδηγώντας σε NullPointerException. Αυτό μειώνει την αξιοπιστία του κώδικα, καθώς η εκτέλεση θα αποτύχει σε μη αρχικοποιημένες περιπτώσεις.
+
+Magic Numbers
+Μετρική που επηρεάζεται: Συντηρησιμότητα (Maintainability)
+Περιγραφή: Οι σκληροκωδικοποιημένες τιμές (π.χ. 500, 3, 0.75) δυσκολεύ
+
+Interruptedtiw metrikwe tiw uelv me kanoniko onoma px LCOMΟι μετρικές ποιότητας κώδικα που επηρεάζονται από τα έξι εντοπισμένα "bad smells" στην κλάση Wedding μπορούν να χαρτογραφηθούν σε κανονικοποιημένες μετρικές, όπως η LCOM (Lack of Cohesion of Methods) και άλλες που χρησιμοποιούνται συχνά σε εργαλεία ανάλυσης κώδικα (π.χ., SonarQube, PMD). Παρακάτω περιγράφονται οι μετρικές που επηρεάζονται από κάθε bad smell, με έμφαση σε κανονικοποιημένες μετρικές όπως η LCOM, όπου σχετίζεται, και σύντομη εξήγηση για το πώς κάθε smell επηρεάζει τη μετρική. Οι εξηγήσεις είναι συνοπτικές, όπως ζητήθηκε.
+Μετρικές που Επηρεάζονται από τα Bad Smells
+
+Inconsistent Method Naming
+Μετρική: Code Readability (Αναγνωσιμότητα)
+Επίδραση: Η ασυνεπής ονοματολογία (calcPhotosCost vs. calculateFoodCost) μειώνει την αναγνωσιμότητα, που μετριέται μέσω εργαλείων όπως το Code Climate ή με κατευθυντήριες γραμμές κώδικα (coding style metrics). Δεν επηρεάζει άμεσα την LCOM, αλλά αυξάνει τον Cognitive Complexity (μετρική που αξιολογεί την ευκολία κατανόησης).
+Πώς: Αναγκάζει τους προγραμματιστές να ερμηνεύσουν διαφορετικά στυλ ονομασίας, αυξάνοντας το νοητικό φορτίο.
+
+Incorrect Method Return Type
+Μετρική: Functional Correctness (Σωστότητα)
+Επίδραση: Ο λανθασμένος τύπος επιστροφής (void αντί για double στη μέθοδο calcPhotosCost) προκαλεί σφάλμα μεταγλώττισης, επηρεάζοντας τη μετρική σωστότητας, που αξιολογείται μέσω Compile-Time Error Metrics ή Bug Detection Rate σε εργαλεία όπως το SonarQube. Δεν σχετίζεται άμεσα με την LCOM.
+Πώς: Η μέθοδος δεν επιστρέφει την αναμενόμενη τιμή, οδηγώντας σε μη λειτουργικό κώδικα.
+
+Uninitialized List
+Μετρική: Reliability (Αξιοπιστία)
+Επίδραση: Η μη αρχικοποιημένη λίστα people προκαλεί NullPointerException, επηρεάζοντας τη μετρική αξιοπιστίας, που μετριέται μέσω Exception Proneness ή Runtime Error Metrics. Δεν επηρεάζει την LCOM, αλλά αυξάνει τον κίνδυνο αποτυχίας εκτέλεσης.
+Πώς: Η έλλειψη αρχικοποίησης οδηγεί σε σφάλματα κατά την εκτέλεση, μειώνοντας την εμπιστοσύνη στον κώδικα.
+
+Magic Numbers
+Μετρική: Maintainability (Συντηρησιμότητα)
+Επίδραση: Οι σκληροκωδικοποιημένες τιμές (π.χ., 500, 3, 0.75) αυξάνουν το Technical Debt και μειώνουν τη μετρική συντηρησιμότητας, που μετριέται μέσω Maintainability Index σε εργαλεία όπως το SonarQube. Δεν επηρεάζει άμεσα την LCOM.
+Πώς: Οι αλλαγές σε αυτές τις τιμές απαιτούν επεξεργασία σε πολλαπλά σημεία, αυξάνοντας το κόστος συντήρησης.
+
+Primitive Obsession
+Μετρική: LCOM (Lack of Cohesion of Methods)
+Επίδραση: Η χρήση πρωτογενών τύπων (int για vegans, double για total) αντί για αντικείμενα ή enums για την αναπαράσταση δεδομένων (π.χ., τύποι γευμάτων) μπορεί να αυξήσει την LCOM, καθώς οι μέθοδοι χειρίζονται ασύνδετες λειτουργίες (υπολογισμοί και μέτρηση). Η LCOM μετρά την έλλειψη συνοχής, δηλαδή πόσο οι μέθοδοι της κλάσης συνεργάζονται για έναν κοινό σκοπό.
+Πώς: Η έλλειψη ενός μοντέλου δεδομένων (π.χ., κλάση Meal) διασπά τη συνοχή, καθώς οι μέθοδοι χειρίζονται δεδομένα χαμηλού επιπέδου αντί για συνεκτικά αντικείμενα.
+
+Long Method
+Μετρική: Cyclomatic Complexity (Κυκλοματική Πολυπλοκότητα)
+Επίδραση: Η μέθοδος calculateFoodCost συνδυάζει μέτρηση (loop για vegans) και υπολογισμούς κόστους, αυξάνοντας την κυκλοματική πολυπλοκότητα, που μετριέται ως ο αριθμός των ανεξάρτητων μονοπατιών στον κώδικα. Επίσης, επηρεάζει την LCOM έμμεσα, καθώς η μέθοδος περιλαμβάνει πολλαπλές ευθύνες.
+Πώς: Η πολυπλοκότητα δυσκολεύει τη δοκιμή και τη συντήρηση, ενώ η ανάμειξη ευθυνών μειώνει τη συνοχή.
+
+
+Σχόλια για την LCOM
+
+Η LCOM (Lack of Cohesion of Methods) επηρεάζεται κυρίως από το Primitive Obsession και το Long Method, καθώς αυτά τα smells εισάγουν ασύνδετες λειτουργίες στην κλάση (π.χ., μέτρηση και υπολογισμοί κόστους). Η LCOM υπολογίζεται ως:
+LCOM = 1 - (άθροισμα των μεθόδων που μοιράζονται κοινά πεδία) / (συνολικές μέθοδοι * πεδία).
+Στην κλάση Wedding, οι μέθοδοι calculateFoodCost και calcPhotosCost χρησιμοποιούν το πεδίο people, αλλά η ανάμειξη διαφορετικών ευθυνών (υπολογισμός κόστους φαγητού vs. φωτογραφιών) μπορεί να αυξήσει την LCOM, υποδεικνύοντας χαμηλή συνοχή.
+
+Η τιμή της LCOM θα ήταν υψηλότερη αν οι μέθοδοι δεν μοιράζονταν το πεδίο people, αλλά η παρουσία του Primitive Obsession και η έλλειψη ενός πιο δομημένου μοντέλου δεδομένων (π.χ., κλάση για γεύματα ή φωτογραφίες) επιδεινώνουν τη συνοχή.
+
+Συνοπτικός Πίνακας
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Bad SmellΜετρικήΠώς ΕπηρεάζεταιInconsistent Method NamingCode ReadabilityΜειώνει την ευκολία κατανόησης του κώδικα.Incorrect Method Return TypeFunctional CorrectnessΠροκαλεί σφάλματα μεταγλώττισης.Uninitialized ListReliabilityΑυξάνει τον κίνδυνο runtime exceptions.Magic NumbersMaintainabilityΑυξάνει το technical debt και το κόστος συντήρησης.Primitive ObsessionLCOMΜειώνει τη συνοχή λόγω πρωτογενών τύπων.Long MethodCyclomatic Complexity, LCOMΑυξάνει την πολυπλοκότητα και μειώνει τη συνοχή.
+Επιπλέον Σημειώσεις
+
+Εάν θέλετε ποσοτικοποίηση των μετρικών (π.χ., υπολογισμός LCOM ή Cyclomatic Complexity για την κλάση), μπορώ να το αναλύσω περαιτέρω, αλλά χρειάζεται πιο συγκεκριμένη απαίτηση.
+Εάν χρειάζεστε διόρθωση του κώδικα για να βελτιωθούν αυτές οι μετρικές (π.χ., μείωση LCOM με καλύτερη οργάνωση), μπορώ να παρέχω ανανεωμένο κώδικα.
+Εάν εννοούσατε κάτι άλλο με το "tiw metrikwe tiw uelv me kanoniko onoma," διευκρινίστε (π.χ., συγκεκριμένες μετρικές ή εργαλεία).
+
+Πείτε μου πώς να προχωρήσω!den uelv mono gia thn LCOM ;htan paradeigma, apla uelv na tiw onomazeiw px LCOM, CBO, NIT, NOCΚατανοώ ότι θέλετε μια περιγραφή των μετρικών ποιότητας κώδικα που επηρεάζονται από τα έξι εντοπισμένα "bad smells" στην κλάση Wedding, με έμφαση σε κανονικοποιημένες μετρικές όπως LCOM (Lack of Cohesion of Methods), CBO (Coupling Between Objects), NIT (Number of Instance Methods), και NOC (Number of Children), όπως αναφέρατε ως παραδείγματα. Θα παραθέσω τις μετρικές που επηρεάζονται από κάθε bad smell, χρησιμοποιώντας τυποποιημένα ονόματα μετρικών (όπου είναι δυνατόν) και σύντομες εξηγήσεις για το πώς κάθε smell επηρεάζει αυτές τις μετρικές. Εάν μια μετρική όπως η NOC δεν επηρεάζεται, θα το διευκρινίσω.
+Μετρικές που Επηρεάζονται από τα Bad Smells
+
+Inconsistent Method Naming
+Μετρικές: Cognitive Complexity (CC)
+Επίδραση: Η ασυνεπής ονοματολογία (calcPhotosCost vs. calculateFoodCost) αυξάνει τη Cognitive Complexity, μια μετρική που μετρά τη δυσκολία κατανόησης του κώδικα. Δεν επηρεάζει άμεσα την LCOM, CBO, NIT, ή NOC, αλλά επιδεινώνει την αναγνωσιμότητα, που μπορεί να μετρηθεί έμμεσα μέσω εργαλείων όπως το SonarQube.
+Πώς: Η ασυνέπεια αναγκάζει τους προγραμματιστές να ερμηνεύσουν διαφορετικά στυλ ονομασίας, αυξάνοντας το νοητικό φορτίο.
+
+Incorrect Method Return Type
+Μετρικές: Bug Proneness (BP)
+Επίδραση: Ο λανθασμένος τύπος επιστροφής (void αντί για double στη μέθοδο calcPhotosCost) εισάγει σφάλματα μεταγλώττισης, επηρεάζοντας τη μετρική Bug Proneness, που παρακολουθεί πιθανά σφάλματα. Δεν επηρεάζει άμεσα την LCOM, CBO, NIT, ή NOC.
+Πώς: Το σφάλμα εμποδίζει τη σωστή εκτέλεση, μειώνοντας την αξιοπιστία του κώδικα.
+
+Uninitialized List
+Μετρικές: Reliability Index (RI)
+Επίδραση: Η μη αρχικοποιημένη λίστα people οδηγεί σε NullPointerException, επηρεάζοντας τη μετρική Reliability Index, που αξιολογεί την πιθανότητα σφαλμάτων κατά την εκτέλεση. Δεν επηρεάζει την LCOM, CBO, NIT, ή NOC.
+Πώς: Η έλλειψη αρχικοποίησης προκαλεί runtime σφάλματα, μειώνοντας την αξιοπιστία.
+
+Magic Numbers
+Μετρικές: Maintainability Index (MI)
+Επίδραση: Οι σκληροκωδικοποιημένες τιμές (π.χ., 500, 3, 0.75) μειώνουν τον Maintainability Index, μια μετρική που αξιολογεί την ευκολία συντήρησης του κώδικα. Δεν επηρεάζουν άμεσα την LCOM, CBO, NIT, ή NOC.
+Πώς: Οι αλλαγές σε αυτές τις τιμές απαιτούν επεξεργασία σε πολλαπλά σημεία, αυξάνοντας το Technical Debt.
+
+Primitive Obsession
+Μετρικές: LCOM (Lack of Cohesion of Methods), CBO (Coupling Between Objects)
+Επίδραση:
+LCOM: Η χρήση πρωτογενών τύπων (int για vegans, double για total) αντί για αντικείμενα ή enums (π.χ., κλάση Meal) μειώνει τη συνοχή της κλάσης, αυξάνοντας την LCOM. Οι μέθοδοι χειρίζονται ασύνδετες λειτουργίες (υπολογισμοί και μέτρηση), κάτι που η LCOM μετρά ως έλλειψη συνοχής.
+CBO: Η εξάρτηση από πρωτογενείς τύπους αντί για αντικείμενα μπορεί να αυξήσει τη σύνδεση με εξωτερικές δομές δεδομένων (αν υπήρχαν), αν και στην παρούσα κλάση η CBO παραμένει χαμηλή λόγω της απλότητας.
+
+Πώς: Η έλλειψη ενός μοντέλου δεδομένων διασπά τη συνοχή και μπορεί να αυξήσει τη σύνδεση με εξωτερικά δεδομένα.
+
+Long Method
+Μετρικές: Cyclomatic Complexity (CC), LCOM, NIT (Number of Instance Methods)
+Επίδραση:
+Cyclomatic Complexity: Η μέθοδος calculateFoodCost συνδυάζει μέτρηση και υπολογισμούς, αυξάνοντας την Cyclomatic Complexity, που μετρά τον αριθμό ανεξάρτητων μονοπατιών στον κώδικα.
+LCOM: Η ανάμειξη πολλαπλών ευθυνών (μέτρηση vegan και υπολογισμός κόστους) στη μέθοδο μειώνει τη συνοχή, αυξάνοντας την LCOM.
+NIT: Η μη διάσπαση της μεθόδου σε μικρότερες διατηρεί τον NIT χαμηλό, αλλά η δημιουργία επιπλέον μεθόδων για καλύτερη οργάνωση θα αύξανε τον NIT, βελτιώνοντας τη δομή.
+
+Πώς: Η πολυπλοκότητα και η ανάμειξη ευθυνών δυσκολεύουν τη συντήρηση και μειώνουν τη συνοχή.
+
+
+Σχετικά με τη NOC (Number of Children)
+
+NOC (Number of Children): Αυτή η μετρική, που μετρά τον αριθμό των κλάσεων που κληρονομούν από την τρέχουσα κλάση, δεν επηρεάζεται από τα bad smells στην παρούσα κλάση Wedding, καθώς δεν υπάρχουν υποκλάσεις ή κληρονομικότητα στο παράδειγμα. Η Wedding δεν έχει παιδιά, οπότε η NOC = 0 και παραμένει ανεπηρέαστη.
+
+Συνοπτικός Πίνακας Μετρικών
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Bad SmellΜετρικέςΠώς ΕπηρεάζονταιInconsistent Method NamingCognitive Complexity (CC)Αυξάνει το νοητικό φορτίο λόγω ασυνεπούς ονοματολογίας.Incorrect Method Return TypeBug Proneness (BP)Εισάγει σφάλματα μεταγλώττισης.Uninitialized ListReliability Index (RI)Αυξάνει τον κίνδυνο runtime exceptions.Magic NumbersMaintainability Index (MI)Μειώνει την ευκολία συντήρησης λόγω σκληροκωδικοποίησης.Primitive ObsessionLCOM, CBOΑυξάνει την έλλειψη συνοχής και πιθανή σύνδεση.Long MethodCyclomatic Complexity, LCOM, NITΑυξάνει την πολυπλοκότητα, μειώνει τη συνοχή, επηρεάζει τον αριθμό μεθόδων.
+Επιπλέον Διευκρινίσεις
+
+LCOM: Επηρεάζεται από Primitive Obsession και Long Method, καθώς μειώνουν τη συνοχή της κλάσης. Υπολογίζεται ως: LCOM = 1 - (άθροισμα μεθόδων που μοιράζονται πεδία) / (συνολικές μέθοδοι * πεδία). Στην κλάση Wedding, η LCOM είναι μέτρια λόγω της χρήσης του people από όλες τις μεθόδους, αλλά η ανάμειξη ευθυνών την επιδεινώνει.
+CBO: Επηρεάζεται ελαφρώς από το Primitive Obsession, αλλά η κλάση είναι απλή και δεν έχει ισχυρές εξαρτήσεις με άλλες κλάσεις, οπότε η CBO παραμένει χαμηλή.
+NIT: Επηρεάζεται έμμεσα από το Long Method, καθώς η διάσπαση της μεθόδου σε μικρότερες θα αύξανε τον NIT, βελτιώνοντας τη δομή.
+NOC: Δεν επηρεάζεται, καθώς η κλάση δεν έχει υποκλάσεις.
+
+Τι Μπορώ να Κάνω Περαιτέρω
+
+Αν θέλετε ποσοτικοποίηση (π.χ., υπολογισμός LCOM ή Cyclomatic Complexity με αριθμούς), μπορώ να αναλύσω τον κώδικα περαιτέρω.
+Αν θέλετε διόρθωση του κώδικα για να βελτιωθούν αυτές οι μετρικές (π.χ., μείωση LCOM με καλύτερη συνοχή), μπορώ να παρέχω ανανεωμένο κώδικα, όπως το παράδειγμα στην προηγούμενη απάντηση.
+Αν εννοούσατε κάτι άλλο με το "tiw metrikwe tiw uelv me kanoniko onoma," διευκρινίστε (π.χ., συγκεκριμένες μετρικές ή εργαλεία ανάλυσης).
+
+Πείτε μου πώς να συνεχίσω!wpc?Υποθέτω ότι με το "wpc" εννοείτε το WMC (Weighted Methods per Class), μια ακόμα τυποποιημένη μετρική ποιότητας κώδικα, καθώς συζητάμε για μετρικές όπως LCOM, CBO, NIT, και NOC. Το WMC μετρά το άθροισμα της πολυπλοκότητας (συνήθως κυκλοματικής πολυπλοκότητας) όλων των μεθόδων σε μια κλάση. Αν εννοούσατε κάτι άλλο με το "wpc," παρακαλώ διευκρινίστε, και θα προσαρμόσω την απάντηση.
+Επίδραση των Bad Smells στο WMC και Άλλες Μετρικές
+Παρακάτω, περιγράφω πώς τα έξι εντοπισμένα bad smells στην κλάση Wedding επηρεάζουν τη μετρική WMC και επαναλαμβάνω τις σχετικές μετρικές (LCOM, CBO, NIT, NOC) για πληρότητα, με έμφαση σε κανονικοποιημένα ονόματα μετρικών και σύντομες εξηγήσεις, όπως ζητήθηκε.
+
+Inconsistent Method Naming
+Μετρικές: Cognitive Complexity (CC)
+Επίδραση στο WMC: Δεν επηρεάζει άμεσα το WMC, καθώς το WMC βασίζεται στην κυ
+
+Interruptedπες μονο αν ο κωδικας επιρεαζεται αρνητικα με βαση αυτη τη μετρικηWMC (Weighted Methods per Class): Ο κώδικας επηρεάζεται αρνητικά, κυρίως λόγω του Long Method smell στη μέθοδο calculateFoodCost, που αυξάνει την κυκλοματική πολυπλοκότητα και συνεπώς το WMC.Ονοματίστε ποια σχεδιαστική αρχή ή πρότυπο σχεδίασης θα μπορούσε να εφαρμοστεί για την βελτίωση της ποιότητας του κώδικα. δεν ειναι αναγλη να έχει και απο τα 2Σχεδιαστική Αρχή: Single Responsibility Principle (SRP)
+
+Πώς Βελτιώνει: Το bad smell Long Method στη μέθοδο calculateFoodCost (που συνδυάζει μέτρηση vegan και υπολογισμό κόστους) παραβιάζει το SRP, καθώς η μέθοδος έχει πολλαπλές ευθύνες. Η εφαρμογή του SRP, με διάσπαση σε μικρότερες μεθόδους (π.χ., countVegans και computeCost), μειώνει την πολυπλοκότητα και βελτιώνει τη συντηρησιμότητα.
+
+Πρότυπο Σχεδίασης: Strategy Pattern
+
+Πώς Βελτιώνει: Το Primitive Obsession smell, όπου χρησιμοποιούνται πρωτογενείς τύποι αντί για αντικείμενα για γεύματα, μπορεί να διορθωθεί με το Strategy Pattern. Δημιουργώντας μια διεπαφή MealCostStrategy με υλοποιήσεις για BasicMeal και VeganMeal, ο κώδικας γίνεται πιο ευέλικτος και επεκτάσιμος, μειώνοντας την εξάρτηση από σκληροκωδικοποιημένες τιμές.
+
+Σημείωση: Το SRP απευθύνεται σε όλα τα smells, ενώ το Strategy Pattern εστιάζει κυρίως στο Primitive Obsession και Magic Numbers. Δεν είναι απαραίτητο να εφαρμοστούν και τα δύο ταυτόχρονα, αλλά συνδυαστικά ενισχύουν τη δομή του κώδικα.

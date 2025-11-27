@@ -1,0 +1,323 @@
+/* We want to simulate a system of FiniteStateMachines. There are a lot of FSMs where each one performs an operation. After a machine starts (start()), it runs until a finish condition is met (isFinished()), and the finish method is called (finish()). For now, our system has two machines: A DivisibleNumbersMachine, where it calculates all numbers divisible by 4 up to a threshold (specified by the user) and a PushDownAutomaton, where it calculates the sum of numbers up to a threshold (specified by the user). The PushDown Machine has an ArrayList<Integer> as a stack. */ public class StateMachine{ 	String name; 	String machineType; 	 	private int counter; 	 	private int threshold; 	 	private List<Integer> stack; 	 	public StateMachine(int thresh, String machine){ 		this.threshold = thresh; 		this.machineType = machine; 		this.counter = 0; 		if (machineType.equals("PushDownAutomaton")){ 			this.stack = new ArrayList<Integer>(); 		} 	} 	 	public void run(){ 		start(); 		while (!isFinished()){ 			execute(); 		} 		finish(); 	} 	 	public void start(){ 		if (machineType.equals("DivisibleNumbersMachine")){ 			System.out.println("Starting to find numbers divisible by 4 until " + threshold); 		} 		else if (machineType.equals("PushDownAutomaton")){ 			System.out.println("Started pushing numbers up to " + threshold + " to stack"); 		} 	} 		 	public boolean isFinished(){ 		return counter >= threshold; 	} 	 	public void execute(){ 		if (machineType.equals("DivisibleNumbersMachine")){ 			if (counter % 4 == 0){ 				System.out.println(counter + " is divisible by 4"); 			} 			counter++; 		} 		else if (machineType.equals("PushDownAutomaton")){ 			stack.add(counter); 			counter++; 		} 	} 			 	public void finish(){ 		if (machineType.equals("DivisibleNumbersMachine")){ 			System.out.println("Automaton finished"); 		} 		else if (machineType.equals("PushDownAutomaton")){ 			int sum = 0; 			for (int num : stack){ 				sum += num; 			} 			System.out.println("Sum = " + sum); 			System.out.println("Automaton finished"); 		} 	} } Which bad smells you found? Which metrics are influenced? Which pattern or principle can be used?
+Το ChatGPT είπε:
+Below is a clean, structured analysis of the code.
+________________________________________
+✅ 1. Bad smells in the code
+❌ a. Type Checking / Conditional Complexity (Biggest smell)
+The code relies on:
+if (machineType.equals("DivisibleNumbersMachine")) { ... }
+else if (machineType.equals("PushDownAutomaton")) { ... }
+
+This is a classic Type Checking smell, also called:
+●	Switch Statements
+
+●	Explicit Type Code
+
+●	Conditional Polymorphism
+
+●	Feature Envy (because behavior depends on machineType instead of the object)
+
+This violates polymorphism.
+________________________________________
+❌ b. God Class / Too Many Responsibilities
+StateMachine does:
+●	startup messaging
+
+●	execution logic
+
+●	termination logic
+
+●	data structure management
+
+●	printing / presentation
+
+One class should not do all of that.
+________________________________________
+❌ c. Primitive Obsession
+Using String machineType to determine behavior instead of using proper classes.
+________________________________________
+❌ d. Data Clumping
+counter, threshold, stack parameters exist in multiple code blocks and are coupled with behavior based on machineType.
+________________________________________
+❌ e. Duplicated Code
+Repeated conditional branches:
+●	in constructor
+
+●	in start()
+
+●	in execute()
+
+●	in finish()
+
+________________________________________
+❌ f. Inappropriate Intimacy
+The class depends too much on internal implementation of different machines (e.g., knowing a PDA needs a stack).
+________________________________________
+❌ g. Poor Cohesion
+Methods serve multiple unrelated behaviors. The class handles two different automata—very low cohesion.
+________________________________________
+✅ 2. Which metrics are affected
+📉 a. Cyclomatic Complexity (CC)
+All those if/else machineType checks increase branching → higher complexity.
+________________________________________
+📉 b. Class Coupling
+StateMachine is coupled to string type codes and to internal behaviors of both automata → higher coupling.
+________________________________________
+📉 c. Lack of Cohesion of Methods (LCOM)
+Methods do unrelated things depending on machineType → poor cohesion.
+________________________________________
+📉 d. Maintainability Index
+The code will be harder to maintain because every time a new machine type is added, you must modify multiple blocks.
+________________________________________
+📉 e. Code Duplication metric
+Same conditional repeated in start, execute, and finish.
+________________________________________
+✅ 3. Which patterns or principles can be applied
+⭐ Best solution: Apply the Strategy Pattern
+Create an abstract interface:
+interface FiniteStateMachine {
+    void start();
+    boolean isFinished();
+    void execute();
+    void finish();
+}
+
+Then create:
+class DivisibleNumbersMachine implements FiniteStateMachine { ... }
+class PushDownAutomaton implements FiniteStateMachine { ... }
+
+A controller would just call:
+fsm.run();
+
+This removes type checks entirely.
+________________________________________
+⭐ Also applies: Template Method Pattern
+A base StateMachine can define:
+public final void run() {
+    start();
+    while (!isFinished()) {
+        execute();
+    }
+    finish();
+}
+
+With subclasses overriding the steps.
+________________________________________
+SOLID Principles
+✔ Single Responsibility Principle (SRP)
+Each machine becomes its own class.
+✔ Open/Closed Principle (OCP)
+Adding a new FSM does not require editing the original class.
+✔ Liskov Substitution Principle (LSP)
+Any FSM can be substituted where a StateMachine is expected.
+✔ Interface Segregation Principle
+Each machine implements the minimal interface for execution.
+✔ Dependency Inversion Principle
+The controller depends on the abstraction FiniteStateMachine, not on concrete machines.
+________________________________________
+Other useful refactorings
+●	Replace Type Code with Subclasses
+
+●	Replace Conditional with Polymorphism
+
+●	Extract Class
+
+________________________________________
+🎯 Summary
+Bad smells:
+●	Type Checking
+
+●	God Class
+
+●	Duplicated Code
+
+●	Primitive Obsession
+
+●	Low Cohesion
+
+●	Inappropriate Intimacy
+
+●	Data Clumping
+
+Metrics negatively impacted:
+●	Cyclomatic Complexity
+
+●	Coupling
+
+●	Cohesion (LCOM)
+
+●	Maintainability Index
+
+●	Code Duplication
+
+Best patterns / principles to use:
+●	Strategy Pattern
+
+●	Template Method Pattern
+
+●	SOLID (especially SRP, OCP, LSP)
+
+●	Replace Conditional with Polymorphism
+
+________________________________________
+If you'd like, I can also provide a clean refactored version of this entire system using proper OOP and patterns.
+Είπες:
+Can you refactor the code in one file?
+Το ChatGPT είπε:
+Below is a fully refactored version in ONE file, following:
+●	Strategy pattern
+
+●	Template Method pattern
+
+●	Replace conditional with polymorphism
+
+●	SRP + OCP (SOLID)
+
+There are no if(machineType) checks anymore.
+Everything is in a single Java file, as you requested.
+________________________________________
+✅ Refactored Code (One File)
+import java.util.ArrayList;
+import java.util.List;
+
+public class StateMachineDemo {
+
+    // -----------------------------------------
+    // 1. Abstract Base Class (Template Method)
+    // -----------------------------------------
+    public static abstract class StateMachine {
+        protected int threshold;
+        protected int counter = 0;
+
+        public StateMachine(int threshold) {
+            this.threshold = threshold;
+        }
+
+        public final void run() {
+            start();
+            while (!isFinished()) {
+                execute();
+            }
+            finish();
+        }
+
+        public boolean isFinished() {
+            return counter >= threshold;
+        }
+
+        protected abstract void start();
+        protected abstract void execute();
+        protected abstract void finish();
+    }
+
+    // -----------------------------------------
+    // 2. DivisibleNumbersMachine
+    // -----------------------------------------
+    public static class DivisibleNumbersMachine extends StateMachine {
+
+        public DivisibleNumbersMachine(int threshold) {
+            super(threshold);
+        }
+
+        @Override
+        protected void start() {
+            System.out.println("Starting to find numbers divisible by 4 until " + threshold);
+        }
+
+        @Override
+        protected void execute() {
+            if (counter % 4 == 0) {
+                System.out.println(counter + " is divisible by 4");
+            }
+            counter++;
+        }
+
+        @Override
+        protected void finish() {
+            System.out.println("DivisibleNumbersMachine finished");
+        }
+    }
+
+    // -----------------------------------------
+    // 3. PushDownAutomaton
+    // -----------------------------------------
+    public static class PushDownAutomaton extends StateMachine {
+
+        private List<Integer> stack = new ArrayList<>();
+
+        public PushDownAutomaton(int threshold) {
+            super(threshold);
+        }
+
+        @Override
+        protected void start() {
+            System.out.println("Started pushing numbers up to " + threshold + " to stack");
+        }
+
+        @Override
+        protected void execute() {
+            stack.add(counter);
+            counter++;
+        }
+
+        @Override
+        protected void finish() {
+            int sum = 0;
+            for (int num : stack) {
+                sum += num;
+            }
+            System.out.println("Sum = " + sum);
+            System.out.println("PushDownAutomaton finished");
+        }
+    }
+
+    // -----------------------------------------
+    // 4. Main method
+    // -----------------------------------------
+    public static void main(String[] args) {
+        StateMachine machine1 = new DivisibleNumbersMachine(20);
+        StateMachine machine2 = new PushDownAutomaton(10);
+
+        machine1.run();
+        machine2.run();
+    }
+}
+
+________________________________________
+✅ What’s fixed?
+❌ Removed smells:
+●	No more type-checking (if machineType.equals(...)).
+
+●	No duplicated conditional logic.
+
+●	No god-class responsibilities.
+
+●	No primitive obsession with strings as machine identifiers.
+
+✔ Added good design:
+●	Polymorphism: Each machine knows its behavior.
+
+●	Template Method: run() is defined once.
+
+●	Strategy pattern: Machines are interchangeable.
+
+●	SOLID compliance (SRP, OCP, LSP).
+Είπες:
+Can you extend the system?
+Το ChatGPT είπε:
+A natural and meaningful extension of the system would be to add more types of finite state machines (FSMs), each with distinct behaviors. For example:
+
+New Machine Type: PrimeNumberMachine
+Behavior: Computes and prints all prime numbers up to a threshold.
+
+FSM-Like Flow:
+
+start(): Prints an intro message.
+
+execute(): Checks each number for primality.
+
+isFinished(): Stops at the threshold.
+
+finish(): Prints a summary or total count of primes.
+
+

@@ -1,0 +1,410 @@
+Skip to content
+Chat history
+
+This is a copy of a conversation between ChatGPT & Anonymous.
+
+Report conversation
+You said:
+/*
+We want to simulate a system of FiniteStateMachines.
+There are a lot of FSMs where each one performs an operation.
+After a machine starts (start()), it runs until a finish 
+condition is met (isFinished()), and the finish method 
+is called (finish()). For now, our system has two machines:
+A DivisibleNumbersMachine, where it calculates all numbers 
+divisible by 4 up to a threshold (specified by the user)
+and a PushDownAutomaton, where it calculates the sum of
+numbers up to a threshold (specified by the user). The 
+PushDown Machine has an ArrayList<Integer> as a stack. 
+*/
+
+public class StateMachine{
+	String name;
+	String machineType;
+	
+	private int counter;
+	
+	private int threshold;
+	
+	private List<Integer> stack;
+	
+	public StateMachine(int thresh, String machine){
+		this.threshold = thresh;
+		this.machineType = machine;
+		this.counter = 0;
+		if (machineType.equals("PushDownAutomaton")){
+			this.stack = new ArrayList<Integer>();
+		}
+	}
+	
+	public void run(){
+		start();
+		while (!isFinished()){
+			execute();
+		}
+		finish();
+	}
+	
+	public void start(){
+		if (machineType.equals("DivisibleNumbersMachine")){
+			System.out.println("Starting to find numbers divisible by 4 until " + threshold);
+		}
+		else if (machineType.equals("PushDownAutomaton")){
+			System.out.println("Started pushing numbers up to " + threshold + " to stack");
+		}
+	}
+		
+	public boolean isFinished(){
+		return counter >= threshold;
+	}
+	
+	public void execute(){
+		if (machineType.equals("DivisibleNumbersMachine")){
+			if (counter % 4 == 0){
+				System.out.println(counter + " is divisible by 4");
+			}
+			counter++;
+		}
+		else if (machineType.equals("PushDownAutomaton")){
+			stack.add(counter);
+			counter++;
+		}
+	}
+			
+	public void finish(){
+		if (machineType.equals("DivisibleNumbersMachine")){
+			System.out.println("Automaton finished");
+		}
+		else if (machineType.equals("PushDownAutomaton")){
+			int sum = 0;
+			for (int num : stack){
+				sum += num;
+			}
+			System.out.println("Sum = " + sum);
+			System.out.println("Automaton finished");
+		}
+	}
+}
+
+Can you find and describe the code smells in this code?
+ChatGPT said:
+Yes, the provided code suffers from several code smells—issues that may not break the program, but make it harder to maintain, extend, and understand. Here's a breakdown of the main code smells:
+
+1. God Class / Large Class
+The StateMachine class handles multiple responsibilities: it simulates two completely different state machines (DivisibleNumbersMachine and PushDownAutomaton), manages state, prints output, and controls the flow.
+
+Consequence: Hard to test, extend, and understand. Violates Single Responsibility Principle.
+
+2. Type Code with Conditional Logic
+The code uses the machineType string field with if-else statements to decide behavior in start(), execute(), and finish() methods.
+
+if (machineType.equals("DivisibleNumbersMachine")) { ... }
+else if (machineType.equals("PushDownAutomaton")) { ... }
+
+- **Consequence**: Adding a new machine type would require editing multiple places in the code, violating the **Open/Closed Principle**.
+- **Better Approach**: Use **polymorphism** (subclassing or interfaces) instead of conditionals.
+
+---
+
+### 3. **Duplicated Control Logic**
+- Methods like `start()`, `execute()`, and `finish()` all have `if-else` logic based on machine type, causing code duplication and making the class fragile.
+- **Refactor Suggestion**: Create an interface `FiniteStateMachine` with `start()`, `execute()`, `isFinished()`, and `finish()` methods. Then implement `DivisibleNumbersMachine` and `PushDownAutomaton` separately.
+
+---
+
+### 4. **Inappropriate Intimacy**
+- The stack used by `PushDownAutomaton` is a member of `StateMachine`, even though it’s only relevant to one type of machine.
+- **Consequence**: The class carries state not used by all instances, wasting resources and violating **Encapsulation**.
+
+---
+
+### 5. **Poor Naming / Ambiguity**
+- The class is named `StateMachine` but represents a variety of different automata, with behavior controlled via strings. This is misleading.
+- **Recommendation**: Rename to something more general if keeping this structure, or use polymorphic names for subclasses.
+
+---
+
+### 6. **Primitive Obsession**
+- Using `String` to represent machine types (`"PushDownAutomaton"`, `"DivisibleNumbersMachine"`) rather than more robust constructs like enums or classes.
+- **Consequence**: Susceptible to typos and harder to refactor.
+
+---
+
+### 7. **Low Cohesion**
+- The methods and fields aren’t all related; `stack` is used only by one type, `threshold` by both, and `counter` is shared confusingly.
+- **Refactor Suggestion**: Split responsibilities into specialized classes.
+
+---
+
+### 8. **Lack of Separation of Concerns**
+- Business logic and output logic (e.g., `System.out.println`) are tightly coupled.
+- **Consequence**: Makes it hard to reuse or test logic separately from the console output.
+
+---
+
+### Summary of Suggested Improvements
+- Introduce an interface or abstract class `FiniteStateMachine`.
+- Implement `DivisibleNumbersMachine` and `PushDownAutomaton` as separate subclasses.
+- Move machine-specific state and logic into these subclasses.
+- Eliminate all `if-else` logic based on `machineType`.
+- Separate computation from I/O (e.g., return results instead of printing directly).
+
+Would you like to see a refactored version of this code?
+You said:
+which metrics are affected?
+ChatGPT said:
+Great question. The code smells in your StateMachine class negatively affect several object-oriented design metrics, which are often used to assess code quality and maintainability. Here's a breakdown of the most relevant metrics and how they're impacted:
+
+✅ 1. Cyclomatic Complexity (CC)
+Definition: Measures the number of linearly independent paths through a method. Higher values imply more complex code.
+
+Impact: All the if-else branches based on machineType increase cyclomatic complexity.
+
+Why It Matters: Makes the code harder to test and maintain. Every new machine type increases the complexity linearly or worse.
+
+✅ 2. Lack of Cohesion of Methods (LCOM)
+Definition: Measures how related the methods in a class are to each other based on shared attributes.
+
+Impact: Low cohesion because not all methods use the same fields (stack is used only by PushDownAutomaton, for instance).
+
+Why It Matters: Classes with low cohesion are harder to understand and usually violate the Single Responsibility Principle.
+
+✅ 3. Coupling Between Objects (CBO)
+Definition: Measures how many other classes a given class is coupled to.
+
+Impact: Currently low, but would increase rapidly if you added more machine types using the same conditional structure. The class would need knowledge about all machine-specific behavior.
+
+Why It Matters: High coupling reduces modularity and reusability.
+
+✅ 4. Depth of Inheritance Tree (DIT)
+Impact: Not currently applicable, but introducing proper inheritance (via abstract base class or interface) would increase DIT. However, this would be beneficial if used to reduce duplication and enforce polymorphism.
+
+✅ 5. Number of Children (NOC)
+Impact: Also not currently applicable, but a refactor would introduce subclasses like DivisibleNumbersMachine and PushDownAutomaton. This would increase NOC in a good way by promoting polymorphism.
+
+✅ 6. Weighted Methods per Class (WMC)
+Definition: Sum of complexities of all methods in a class.
+
+Impact: The current class has a relatively high WMC because each method contains machine-type-specific logic.
+
+Why It Matters: High WMC indicates a "God class" that tries to do too much.
+
+✅ 7. Responsibility-Driven Metrics (SRP, OCP)
+SRP (Single Responsibility Principle): Violated. One class is doing the work of multiple machine types.
+
+OCP (Open/Closed Principle): Violated. You must modify existing code (add if branches) to add new machine types instead of extending behavior.
+
+Summary Table:
+Metric	Status	Issue
+Cyclomatic Complexity	🔴 High	Due to multiple conditionals per method
+Lack of Cohesion (LCOM)	🔴 Low	Methods use unrelated data (e.g., stack)
+Coupling Between Objects	🟡 Medium	Would grow worse with more machine types
+Weighted Methods (WMC)	🔴 High	Multiple responsibilities increase complexity
+Inheritance Depth (DIT)	🟢 Low	Could improve with refactoring into polymorphic structure
+Number of Children (NOC)	🟢 0	Should be > 0 with proper polymorphism
+SRP / OCP	🔴 Violated	One class does too much; adding new logic breaks OCP
+Would you like me to suggest or show the improved object-oriented version that addresses these metrics?
+
+You said:
+Which design pattern could improve this code?
+ChatGPT said:
+The Strategy Pattern is the most appropriate design pattern to improve this code.
+
+🔧 Why Use the Strategy Pattern?
+The Strategy Pattern allows you to:
+
+Define a family of algorithms (in this case, different types of StateMachines like DivisibleNumbersMachine and PushDownAutomaton).
+
+Encapsulate them behind a common interface.
+
+Make them interchangeable at runtime without modifying the core controller logic.
+
+This addresses multiple problems in your current design:
+
+Eliminates if-else/switch logic tied to machineType.
+
+Promotes polymorphism over type codes.
+
+Follows the Open/Closed Principle—new machine types can be added without changing existing code.
+
+🏗️ Refactoring Plan Using Strategy Pattern
+1. Define a Strategy Interface:
+public interface FiniteStateMachine {
+    void start();
+    boolean isFinished();
+    void execute();
+    void finish();
+}
+2. Implement Concrete Strategies:
+public class DivisibleNumbersMachine implements FiniteStateMachine {
+    private int counter = 0;
+    private final int threshold;
+
+    public DivisibleNumbersMachine(int threshold) {
+        this.threshold = threshold;
+    }
+
+    public void start() {
+        System.out.println("Starting to find numbers divisible by 4 until " + threshold);
+    }
+
+    public boolean isFinished() {
+        return counter >= threshold;
+    }
+
+    public void execute() {
+        if (counter % 4 == 0) {
+            System.out.println(counter + " is divisible by 4");
+        }
+        counter++;
+    }
+
+    public void finish() {
+        System.out.println("Automaton finished");
+    }
+}
+public class PushDownAutomaton implements FiniteStateMachine {
+    private int counter = 0;
+    private final int threshold;
+    private final List<Integer> stack = new ArrayList<>();
+
+    public PushDownAutomaton(int threshold) {
+        this.threshold = threshold;
+    }
+
+    public void start() {
+        System.out.println("Started pushing numbers up to " + threshold + " to stack");
+    }
+
+    public boolean isFinished() {
+        return counter >= threshold;
+    }
+
+    public void execute() {
+        stack.add(counter++);
+    }
+
+    public void finish() {
+        int sum = stack.stream().mapToInt(Integer::intValue).sum();
+        System.out.println("Sum = " + sum);
+        System.out.println("Automaton finished");
+    }
+}
+3. Context Class to Run the Machines:
+public class StateMachineRunner {
+    private final FiniteStateMachine machine;
+
+    public StateMachineRunner(FiniteStateMachine machine) {
+        this.machine = machine;
+    }
+
+    public void run() {
+        machine.start();
+        while (!machine.isFinished()) {
+            machine.execute();
+        }
+        machine.finish();
+    }
+}
+4. Usage:
+public class Main {
+    public static void main(String[] args) {
+        FiniteStateMachine machine1 = new DivisibleNumbersMachine(20);
+        FiniteStateMachine machine2 = new PushDownAutomaton(10);
+
+        new StateMachineRunner(machine1).run();
+        new StateMachineRunner(machine2).run();
+    }
+}
+✅ Benefits of Strategy Pattern in This Context
+Benefit	How It Helps
+Removes type-checking conditionals	Eliminates if (machineType.equals(...))
+Open to extension	New machines can be added without modifying existing code
+High cohesion	Each machine has only the data and logic it needs
+Easy to test and mock	Each strategy can be tested independently
+Would you like this refactored code as a complete Java file or need help implementing more machine types?
+
+You said:
+can you describe a possible addition that can be made in the system and why the refactored solution helps us in adding it  
+ChatGPT said:
+Absolutely. Let’s walk through a concrete example of a new addition and why the refactored Strategy Pattern-based design makes it easy and clean to implement.
+
+✅ New Feature to Add: FibonacciMachine
+Feature Description:
+Introduce a new machine called FibonacciMachine, which computes and prints the first n Fibonacci numbers, where n is the threshold specified by the user.
+
+❌ In the Original (Unrefactored) Code
+To add FibonacciMachine:
+
+You would need to:
+
+Add another if (machineType.equals("FibonacciMachine")) block in every method: start(), execute(), and finish().
+
+Add new fields (like previous Fibonacci values) to the StateMachine class—even though they are irrelevant to other machine types.
+
+Risk introducing bugs by changing tested logic.
+
+Increase cyclomatic complexity, reduce cohesion, and violate the Open/Closed Principle.
+
+In short, adding one feature means touching existing code everywhere, which is dangerous and error-prone.
+
+✅ In the Refactored Strategy-Based Design
+To add FibonacciMachine, all you need is:
+
+1. Create a New Class:
+public class FibonacciMachine implements FiniteStateMachine {
+    private final int threshold;
+    private int counter = 0;
+    private int a = 0, b = 1;
+
+    public FibonacciMachine(int threshold) {
+        this.threshold = threshold;
+    }
+
+    public void start() {
+        System.out.println("Calculating the first " + threshold + " Fibonacci numbers:");
+    }
+
+    public boolean isFinished() {
+        return counter >= threshold;
+    }
+
+    public void execute() {
+        System.out.println(a);
+        int next = a + b;
+        a = b;
+        b = next;
+        counter++;
+    }
+
+    public void finish() {
+        System.out.println("FibonacciMachine finished.");
+    }
+}
+2. Use It:
+FiniteStateMachine fibMachine = new FibonacciMachine(10);
+new StateMachineRunner(fibMachine).run();
+💡 Why the Refactored Design Helps
+Design Principle / Goal	How It Helps
+Open/Closed Principle	You don’t modify existing classes—just add a new one.
+Single Responsibility	Each class does one thing: handles only its logic.
+High Cohesion	FibonacciMachine has only the state and behavior it needs.
+Low Coupling	No changes needed in unrelated parts of the system.
+Polymorphism	The StateMachineRunner doesn’t care what machine it runs—it just runs it.
+🧠 Summary
+Adding FibonacciMachine is easy because:
+
+It’s encapsulated and modular.
+
+There’s no impact on the existing system.
+
+The new machine is plug-and-play—drop it in, and it works with the existing runner.
+
+This is exactly the kind of scenario the Strategy Pattern is designed for.
+
+Would you like a complete version of this with all three machines (Divisible, PushDown, Fibonacci) working together?
+
+
+
+Δεν επιλέχθηκε κανένα αρχείο.Δεν επιλέχθηκε κανένα αρχείο.
+ChatGPT can make mistakes. Check important info. See Cookie Preferences.

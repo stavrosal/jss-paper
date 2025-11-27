@@ -1,0 +1,436 @@
+/*
+We want to simulate a system of FiniteStateMachines.
+There are a lot of FSMs where each one performs an operation.
+After a machine starts (start()), it runs until a finish
+condition is met (isFinished()), and the finish method
+is called (finish()). For now, our system has two machines:
+A DivisibleNumbersMachine, where it calculates all numbers
+divisible by 4 up to a threshold (specified by the user)
+and a PushDownAutomaton, where it calculates the sum of
+numbers up to a threshold (specified by the user). The
+PushDown Machine has an ArrayList<Integer> as a stack.
+*/
+public class StateMachine{
+    String name;
+    String machineType;
+    
+    private int counter;
+    
+    private int threshold;
+    
+    private List<Integer> stack;
+    
+    public StateMachine(int thresh, String machine){
+        this.threshold = thresh;
+        this.machineType = machine;
+        this.counter = 0;
+        if (machineType.equals("PushDownAutomaton")){
+            this.stack = new ArrayList<Integer>();
+        }
+    }
+    
+    public void run(){
+        start();
+        while (!isFinished()){
+            execute();
+        }
+        finish();
+    }
+    
+    public void start(){
+        if (machineType.equals("DivisibleNumbersMachine")){
+            System.out.println("Starting to find numbers divisible by 4 until " + threshold);
+        }
+        else if (machineType.equals("PushDownAutomaton")){
+            System.out.println("Started pushing numbers up to " + threshold + " to stack");
+        }
+    }
+        
+    public boolean isFinished(){
+        return counter >= threshold;
+    }
+    
+    public void execute(){
+        if (machineType.equals("DivisibleNumbersMachine")){
+            if (counter % 4 == 0){
+                System.out.println(counter + " is divisible by 4");
+            }
+            counter++;
+        }
+        else if (machineType.equals("PushDownAutomaton")){
+            stack.add(counter);
+            counter++;
+        }
+    }
+            
+    public void finish(){
+        if (machineType.equals("DivisibleNumbersMachine")){
+            System.out.println("Automaton finished");
+        }
+        else if (machineType.equals("PushDownAutomaton")){
+            int sum = 0;
+            for (int num : stack){
+                sum += num;
+            }
+            System.out.println("Sum = " + sum);
+            System.out.println("Automaton finished");
+        }
+    }
+}
+Ε6.java
+Εμφάνιση Ε6.java. ποια bad smells εντοπίζειςI'm analyzing the provided StateMachine class for code smells. Code smells are indicators of potential design or implementation issues that may affect maintainability, readability, or extensibility. Below, I identify the bad smells in the code and explain each one:
+Identified Code Smells
+
+Feature Envy
+Description: The StateMachine class handles behavior specific to two different machine types ("DivisibleNumbersMachine" and "PushDownAutomaton") within its methods (start, execute, finish, etc.). This suggests that the class is overly concerned with the internal logic of these specific machine types, which should ideally be encapsulated in separate classes.
+Evidence: The methods start, execute, and finish use conditional statements (if/else) to check the machineType and execute type-specific logic. For example:Javaif (machineType.equals("DivisibleNumbersMachine")) {
+    System.out.println(counter + " is divisible by 4");
+} else if (machineType.equals("PushDownAutomaton")) {
+    stack.add(counter);
+}
+Impact: This makes the class tightly coupled to specific machine behaviors, reducing flexibility and making it harder to add new machine types without modifying the StateMachine class.
+
+Primitive Obsession
+Description: The machineType field is a String used to determine the behavior of the state machine, which is a primitive type instead of a more robust abstraction (e.g., an enum or class hierarchy).
+Evidence: The machineType is a String with values like "DivisibleNumbersMachine" or "PushDownAutomaton". This leads to string comparisons throughout the code:Javaif (machineType.equals("PushDownAutomaton")) {
+    this.stack = new ArrayList<Integer>();
+}
+Impact: Using strings is error-prone (e.g., typos, case sensitivity) and doesn't provide type safety. It also makes the code less self-documenting and harder to extend.
+
+Long Method
+Description: The execute and finish methods contain logic that could be split into smaller, more focused methods or delegated to specialized classes. While not excessively long, they mix concerns by handling multiple machine types.
+Evidence: The execute method contains logic for both machine types:Javapublic void execute() {
+    if (machineType.equals("DivisibleNumbersMachine")) {
+        if (counter % 4 == 0) {
+            System.out.println(counter + " is divisible by 4");
+        }
+        counter++;
+    } else if (machineType.equals("PushDownAutomaton")) {
+        stack.add(counter);
+        counter++;
+    }
+}
+Impact: This reduces readability and makes it harder to maintain or extend the logic for each machine type.
+
+Inappropriate Intimacy
+Description: The StateMachine class directly manipulates the stack field for the PushDownAutomaton type, indicating that it knows too much about the internal workings of one specific machine type.
+Evidence: The execute and finish methods directly access and manipulate the stack:Javastack.add(counter); // in execute
+for (int num : stack) {
+    sum += num;
+} // in finish
+Impact: This tight coupling makes it harder to change the internal representation of the PushDownAutomaton (e.g., using a different data structure) without modifying the StateMachine class.
+
+Switch Statements (or Conditional Logic)
+Description: The use of if/else statements to handle different machine types is a form of switch-like logic that violates the Open-Closed Principle. The class is not open for extension (adding new machine types requires modifying the class) and not closed for modification.
+Evidence: Every method (start, execute, finish) uses if/else to check machineType:Javaif (machineType.equals("DivisibleNumbersMachine")) {
+    // DivisibleNumbersMachine logic
+} else if (machineType.equals("PushDownAutomaton")) {
+    // PushDownAutomaton logic
+}
+Impact: Adding a new machine type requires modifying multiple methods, increasing the risk of errors and reducing maintainability.
+
+Data Clump
+Description: The fields machineType, counter, threshold, and stack are used together to define the behavior of the state machine, but they are not cohesively organized. For example, stack is only relevant for PushDownAutomaton.
+Evidence: The stack field is initialized only when machineType is "PushDownAutomaton":Javaif (machineType.equals("PushDownAutomaton")) {
+    this.stack = new ArrayList<Integer>();
+}
+Impact: This scatters related data and behavior, making it harder to understand the responsibilities of the class and increasing the chance of null-related errors (e.g., accessing stack when machineType is not "PushDownAutomaton").
+
+Missing Abstraction
+Description: The StateMachine class tries to handle all types of state machines in a single class, rather than using an inheritance hierarchy or composition to abstract the behavior of different machine types.
+Evidence: The class uses machineType to differentiate behavior instead of defining separate classes for DivisibleNumbersMachine and PushDownAutomaton.
+Impact: This violates the Single Responsibility Principle, as the class has multiple reasons to change (e.g., adding a new machine type or modifying existing behavior).
+
+Null Reference Risk
+Description: The stack field is only initialized for PushDownAutomaton, leaving it null for other machine types. While the current logic avoids accessing stack in those cases, this setup is fragile and risks NullPointerException if the code is modified carelessly.
+Evidence:Javaprivate List<Integer> stack; // Not initialized for all machine types
+Impact: This makes the code brittle and harder to maintain, as future developers might accidentally access stack when it’s null.
+
+
+Recommendations for Refactoring
+To address these smells, consider the following improvements:
+
+Use Inheritance or Composition: Create an abstract StateMachine class or interface with concrete subclasses (DivisibleNumbersMachine, PushDownAutomaton) to encapsulate type-specific behavior. This eliminates the need for machineType and conditional logic.
+Replace String with Enum or Class: Replace the machineType string with an enum or use the class hierarchy to determine behavior.
+Encapsulate Stack Logic: Move the stack field and its operations to a PushDownAutomaton class, reducing inappropriate intimacy.
+Break Down Methods: Split the execute and finish methods into smaller, type-specific methods in the respective subclasses.
+Ensure Null Safety: Ensure fields like stack are properly initialized or managed within the appropriate class to avoid null reference issues.
+
+Example Refactored Structure
+Javapublic abstract class StateMachine {
+    protected int counter;
+    protected int threshold;
+
+    public StateMachine(int threshold) {
+        this.threshold = threshold;
+        this.counter = 0;
+    }
+
+    public void run() {
+        start();
+        while (!isFinished()) {
+            execute();
+        }
+        finish();
+    }
+
+    protected abstract void start();
+    protected abstract boolean isFinished();
+    protected abstract void execute();
+    protected abstract void finish();
+}
+
+public class DivisibleNumbersMachine extends StateMachine {
+    public DivisibleNumbersMachine(int threshold) {
+        super(threshold);
+    }
+
+    @Override
+    protected void start() {
+        System.out.println("Starting to find numbers divisible by 4 until " + threshold);
+    }
+
+    @Override
+    protected boolean isFinished() {
+        return counter >= threshold;
+    }
+
+    @Override
+    protected void execute() {
+        if (counter % 4 == 0) {
+            System.out.println(counter + " is divisible by 4");
+        }
+        counter++;
+    }
+
+    @Override
+    protected void finish() {
+        System.out.println("Automaton finished");
+    }
+}
+
+public class PushDownAutomaton extends StateMachine {
+    private List<Integer> stack;
+
+    public PushDownAutomaton(int threshold) {
+        super(threshold);
+        this.stack = new ArrayList<>();
+    }
+
+    @Override
+    protected void start() {
+        System.out.println("Started pushing numbers up to " + threshold + " to stack");
+    }
+
+    @Override
+    protected boolean isFinished() {
+        return counter >= threshold;
+    }
+
+    @Override
+    protected void execute() {
+        stack.add(counter);
+        counter++;
+    }
+
+    @Override
+    protected void finish() {
+        int sum = stack.stream().mapToInt(Integer::intValue).sum();
+        System.out.println("Sum = " + sum);
+        System.out.println("Automaton finished");
+    }
+}
+This refactoring eliminates most of the identified smells by using inheritance to separate concerns, removing string-based type checks, and encapsulating the stack within the PushDownAutomaton class.
+Let me know if you'd like further clarification or assistance with implementing these changes!Περιγράψτε τις μετρικές (metrics) που επηρεάζονται.
+
+σ΄ντομα
+Οι μετρικές που επηρεάζονται από τα bad smells στο κώδικα του StateMachine είναι:
+
+Συνεκτικότητα (Cohesion): Χαμηλή, λόγω της ανάμειξης λογικών για διαφορετικούς τύπους μηχανών στην ίδια κλάση (Feature Envy, Missing Abstraction).
+Σύζευξη (Coupling): Υψηλή, καθώς η κλάση εξαρτάται από συγκεκριμένες συμπεριφορές και δεδομένα (π.χ. stack, Inappropriate Intimacy).
+Συντηρησιμότητα (Maintainability): Μειωμένη, λόγω πολύπλοκης λογικής με conditionals (Switch Statements) και κινδύνου σφαλμάτων (Null Reference Risk).
+Επεκτασιμότητα (Extensibility): Περιορισμένη, καθώς η προσθήκη νέων τύπων μηχανών απαιτεί αλλαγές στον κώδικα (Switch Statements, Primitive Obsession).
+Αναγνωσιμότητα (Readability): Χαμηλή, λόγω μεγάλων μεθόδων (Long Method) και διάσπαρτης λογικής (Data Clump).
+
+Η αναδιάρθρωση (refactoring) βελτιώνει αυτές τις μετρικές, αυξάνοντας τη συνεκτικότητα, μειώνοντας τη σύζευξη και βελτιώνοντας τη συντηρησιμότητα και επεκτασιμότητα.θελω τις μετρικες να της γραφεις με το ονομα τους πχ, LCOM ή ΨΒΟΟι μετρικές που επηρεάζονται από τα bad smells στο κώδικα του StateMachine, με τα συγκεκριμένα ονόματά τους, είναι:
+
+LCOM (Lack of Cohesion of Methods): Υψηλό, λόγω ανάμειξης λογικών για διαφορετικούς τύπους μηχανών στην ίδια κλάση (Feature Envy, Missing Abstraction).
+CBO (Coupling Between Objects): Υψηλό, καθώς η κλάση εξαρτάται από συγκεκριμένες συμπεριφορές και δεδομένα (π.χ. stack, Inappropriate Intimacy).
+CC (Cyclomatic Complexity): Αυξημένη, λόγω πολύπλοκης λογικής με conditionals (Switch Statements) και μεγάλων μεθόδων (Long Method).
+WMC (Weighted Methods per Class): Υψηλό, καθώς οι μέθοδοι περιέχουν πολλαπλές ευθύνες (Long Method, Switch Statements).
+RFC (Response For a Class): Υψηλό, λόγω της ανάγκης κλήσης πολλαπλών μεθόδων για διαφορετικούς τύπους μηχανών (Feature Envy, Data Clump).
+
+Η αναδιάρθρωση μειώνει το LCOM, CBO, CC, WMC και RFC, βελτιώνοντας τη συνεκτικότητα, τη σύζευξη και τη συντηρησιμότητα.Ονοματίστε ποια σχεδιαστική αρχή ή πρότυπο σχεδίασης θα μπορούσε να εφαρμοστεί για την βελτίωση της ποιότητας του κώδικα.Για τη βελτίωση της ποιότητας του κώδικα του StateMachine, μπορεί να εφαρμοστεί η αρχή του Single Responsibility Principle (SRP) και το σχεδιαστικό πρότυπο Strategy Pattern.
+
+Single Responsibility Principle (SRP): Κάθε κλάση πρέπει να έχει μία μόνο ευθύνη. Η τρέχουσα κλάση StateMachine διαχειρίζεται πολλαπλές συμπεριφορές (DivisibleNumbersMachine, PushDownAutomaton), παραβιάζοντας το SRP. Η δημιουργία ξεχωριστών κλάσεων για κάθε τύπο μηχανής (όπως στο προτεινόμενο refactoring) εξασφαλίζει ότι κάθε κλάση έχει μία ευθύνη.
+Strategy Pattern: Αυτό το πρότυπο επιτρέπει την αντικατάσταση της λογικής με conditionals (if/else) με ξεχωριστές υλοποιήσεις (strategies) για κάθε τύπο μηχανής. Μπορεί να εφαρμοστεί με τη χρήση μιας διεπαφής ή αφηρημένης κλάσης StateMachine, όπου κάθε τύπος μηχανής (π.χ. DivisibleNumbersMachine, PushDownAutomaton) υλοποιεί τη δική του συμπεριφορά (start, execute, finish). Αυτό μειώνει τη σύζευξη και αυξάνει την επεκτασιμότητα.
+
+Η εφαρμογή αυτών βελτιώνει τις μετρικές LCOM, CBO, CC, WMC και RFC, κάνοντας τον κώδικα πιο συντηρήσιμο και επεκτάσιμο.υλοποίησε το strategy και πες αν θα ταιριαζε και καποιο αλλοTo improve the quality of the StateMachine code by addressing the identified code smells, I'll implement the Strategy Pattern to encapsulate the behavior of different state machine types. This pattern will replace the conditional logic based on machineType with a polymorphic approach, where each machine type is a separate strategy. I'll also evaluate whether another design pattern would be suitable.
+Strategy Pattern Implementation
+The Strategy Pattern will involve:
+
+An interface or abstract class defining the behavior of a state machine (start, execute, isFinished, finish).
+Concrete strategy classes for each machine type (DivisibleNumbersMachine, PushDownAutomaton).
+A context class (StateMachine) that delegates behavior to the selected strategy.
+
+Below is the refactored code:text// Interface defining the strategy for state machine behavior
+interface MachineStrategy {
+    void start();
+    boolean isFinished();
+    void execute();
+    void finish();
+}
+
+// Concrete strategy for DivisibleNumbersMachine
+class DivisibleNumbersMachine implements MachineStrategy {
+    private int counter;
+    private int threshold;
+
+    public DivisibleNumbersMachine(int threshold) {
+        this.threshold = threshold;
+        this.counter = 0;
+    }
+
+    @Override
+    public void start() {
+        System.out.println("Starting to find numbers divisible by 4 until " + threshold);
+    }
+
+    @Override
+    public boolean isFinished() {
+        return counter >= threshold;
+    }
+
+    @Override
+    public void execute() {
+        if (counter % 4 == 0) {
+            System.out.println(counter + " is divisible by 4");
+        }
+        counter++;
+    }
+
+    @Override
+    public void finish() {
+        System.out.println("Automaton finished");
+    }
+}
+
+// Concrete strategy for PushDownAutomaton
+class PushDownAutomaton implements MachineStrategy {
+    private int counter;
+    private int threshold;
+    private List<Integer> stack;
+
+    public PushDownAutomaton(int threshold) {
+        this.threshold = threshold;
+        this.counter = 0;
+        this.stack = new ArrayList<>();
+    }
+
+    @Override
+    public void start() {
+        System.out.println("Started pushing numbers up to " + threshold + " to stack");
+    }
+
+    @Override
+    public boolean isFinished() {
+        return counter >= threshold;
+    }
+
+    @Override
+    public void execute() {
+        stack.add(counter);
+        counter++;
+    }
+
+    @Override
+    public void finish() {
+        int sum = stack.stream().mapToInt(Integer::intValue).sum();
+        System.out.println("Sum = " + sum);
+        System.out.println("Automaton finished");
+    }
+}
+
+// Context class that uses the strategy
+public class StateMachine {
+    private MachineStrategy strategy;
+
+    public StateMachine(MachineStrategy strategy) {
+        this.strategy = strategy;
+    }
+
+    public void run() {
+        strategy.start();
+        while (!strategy.isFinished()) {
+            strategy.execute();
+        }
+        strategy.finish();
+    }
+
+    // Optional: Allow changing strategy at runtime
+    public void setStrategy(MachineStrategy strategy) {
+        this.strategy = strategy;
+    }
+
+    // Example main method to demonstrate usage
+    public static void main(String[] args) {
+        // Create a DivisibleNumbersMachine
+        StateMachine divisibleMachine = new StateMachine(new DivisibleNumbersMachine(10));
+        divisibleMachine.run();
+
+        // Create a PushDownAutomaton
+        StateMachine pushDownMachine = new StateMachine(new PushDownAutomaton(10));
+        pushDownMachine.run();
+    }
+}Explanation of the Implementation
+
+MachineStrategy Interface: Defines the contract for all state machine behaviors (start, isFinished, execute, finish).
+Concrete Strategies:
+DivisibleNumbersMachine: Handles logic for finding numbers divisible by 4.
+PushDownAutomaton: Manages a stack and calculates the sum of numbers.
+
+StateMachine Context: Delegates operations to the selected strategy, eliminating conditional logic and the machineType string.
+Benefits:
+Eliminates Feature Envy, Switch Statements, and Primitive Obsession by removing machineType and conditionals.
+Reduces CBO (Coupling Between Objects) by encapsulating behavior in separate classes.
+Lowers LCOM (Lack of Cohesion of Methods) as each class has a single responsibility.
+Decreases CC (Cyclomatic Complexity) and WMC (Weighted Methods per Class) by simplifying methods.
+Improves RFC (Response For a Class) by distributing responsibilities.
+Addresses Inappropriate Intimacy and Data Clump by moving stack to PushDownAutomaton.
+Mitigates Null Reference Risk by initializing stack within the appropriate strategy.
+
+
+Other Suitable Design Patterns
+Another design pattern that could be suitable is the Template Method Pattern:
+
+How It Fits: The Template Method Pattern could be used by defining an abstract StateMachine class with a run method that outlines the algorithm (call start, loop until isFinished, call execute, then finish). Subclasses like DivisibleNumbersMachine and PushDownAutomaton would implement the abstract methods (start, execute, isFinished, finish).
+Implementation Similarity: The Template Method Pattern is similar to the earlier refactoring suggestion provided in the conversation (using inheritance). For example:Javapublic abstract class StateMachine {
+    protected int counter;
+    protected int threshold;
+
+    public StateMachine(int threshold) {
+        this.threshold = threshold;
+        this.counter = 0;
+    }
+
+    public void run() {
+        start();
+        while (!isFinished()) {
+            execute();
+        }
+        finish();
+    }
+
+    protected abstract void start();
+    protected abstract boolean isFinished();
+    protected abstract void execute();
+    protected abstract void finish();
+}Subclasses like DivisibleNumbersMachine and PushDownAutomaton would extend this abstract class and provide specific implementations.
+Comparison with Strategy Pattern:
+Strategy Pattern: More flexible, as it allows runtime switching of strategies (e.g., using setStrategy). It uses composition, which is generally preferred over inheritance for flexibility.
+Template Method Pattern: More rigid, as the algorithm structure is fixed in the parent class, and behavior is defined through inheritance. It’s simpler if runtime switching isn’t needed.
+
+Why Strategy Pattern is Preferred: The Strategy Pattern is more suitable here because it decouples the state machine’s behavior from its structure, making it easier to add new machine types without modifying existing classes (adhering to the Open-Closed Principle). It also supports runtime changes, which could be useful if the system needs to switch machine types dynamically.
+
+Conclusion
+The Strategy Pattern is the most effective for this scenario due to its flexibility and alignment with the Single Responsibility Principle and Open-Closed Principle. The Template Method Pattern is also viable, especially if the algorithm structure is fixed and runtime strategy changes are unnecessary, but it’s less flexible than Strategy. Both patterns improve maintainability and extensibility by addressing the identified code smells and improving metrics like LCOM, CBO, CC, WMC, and RFC.

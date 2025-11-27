@@ -1,0 +1,1282 @@
+Skip to content
+Chat history
+
+This is a copy of a conversation between ChatGPT & Anonymous.
+
+Report conversation
+You said:
+We aim to develop a system for modeling Wedding events. Each wedding will take place in a venue (String) and will have a List of people (assume People class is already implemented). Each wedding event has food catered to the attendants, where the total cost is calculated by the catering company. 
+Specifically, each person is entitled to one meal, which costs 3€ if its basic, and 3.5€ if its vegan. If there are more than 500 attendants then the prices are -1 / person (that means 2€/basic and 2.5€/vegans). 
+
+The wedding also has a photographer that is paid based on the attendants. The base price is 1€/person but if there are more than 600 attendants then the price drops to 0.75€/person.
+
+class Wedding{ 
+	String venue;
+	
+	List<Person> people;
+	
+	public void addPerson(Person p){
+		this.people.add(p);
+	}
+	
+	public double calculateFoodCost(){
+		int vegans = 0; 
+		for (Person p : people){
+			if (p.isVegan()){
+				vegans += 1;
+			}
+		}
+		
+		int non_vegans = people.size() - vegans;
+		
+		double total; // total cost
+		if (people.size() <= 500){
+			total = non_vegans * 3 + vegans * 3.5;
+		}
+		else{
+			total = non_vegans * 2 + vegans * 2.5;
+		}
+		
+		return total;	
+	}
+	
+	public double calcPhotosCost(){
+		double cost;
+		if (people.size() <= 600){
+			cost = people.size() * 1;
+		}
+		else{
+			cost = people.size * 0.75;
+		}
+		
+		return cost;
+	}
+		 
+
+}
+
+πες μου τα code smells
+ChatGPT said:
+Το παραπάνω Wedding class έχει αρκετά code smells που μειώνουν την αναγνωσιμότητα, επεκτασιμότητα και τη συντηρησιμότητα του κώδικα. Ακολουθούν τα βασικά προβλήματα:
+
+🐞 1. people.size * 0.75 (Typo/Bug)
+Πρόβλημα: Στη μέθοδο calcPhotosCost, γράφεται people.size * 0.75 αντί για people.size() * 0.75.
+
+Συνέπεια: Compilation error (το size είναι μέθοδος και όχι property).
+
+Λύση: Χρήση people.size().
+
+🐞 2. Primitive Obsession
+Πρόβλημα: Η λογική για το κόστος φαγητού και φωτογράφου βασίζεται σε μαγικούς αριθμούς (π.χ. 3, 3.5, 500, 600).
+
+Λύση: Ορίστε σταθερές (constants) με περιγραφικά ονόματα:
+
+private static final double BASIC_MEAL_COST = 3.0;
+private static final double VEGAN_MEAL_COST = 3.5;
+private static final int FOOD_DISCOUNT_THRESHOLD = 500;
+🐞 3. Too Much Logic in One Class (God Class)
+Πρόβλημα: Η Wedding κάνει πολλές δουλειές: διαχειρίζεται πρόσωπα, κοστολογεί φαγητό, φωτογράφο.
+
+Λύση: Διαχωρισμός ευθυνών:
+
+CateringCostCalculator
+
+PhotographyCostCalculator
+
+Wedding να συντονίζει μόνο.
+
+🐞 4. No Null Checks
+Πρόβλημα: Η people μπορεί να είναι null εάν δεν αρχικοποιηθεί.
+
+Λύση: Χρήση constructor για να αρχικοποιείται η λίστα:
+
+public Wedding(String venue){
+    this.venue = venue;
+    this.people = new ArrayList<>();
+}
+🐞 5. Lack of Encapsulation
+Πρόβλημα: Η λίστα people είναι προσβάσιμη από το ίδιο το object χωρίς προστασία.
+
+Λύση: Παροχή μόνο safe μεθόδων για προσθήκη/ανάκτηση.
+
+🐞 6. Hard-Coded Currency
+Πρόβλημα: Το "€" είναι hardcoded στο μυαλό σου, αλλά όχι στον κώδικα.
+
+Λύση: Προαιρετικά, μπορεί να γίνει προσθήκη enum ή strategy για διαφορετικά νομίσματα ή φορολογικά καθεστώτα.
+
+🐞 7. Method Naming Inconsistency
+Πρόβλημα: calculateFoodCost() και calcPhotosCost() έχουν διαφορετικό naming style.
+
+Λύση: Ομογενοποίηση: π.χ. calculatePhotoCost().
+
+🐞 8. No Unit Tests
+Πρόβλημα: Δεν υπάρχουν tests για τις τιμές/συμπεριφορές.
+
+Λύση: Δημιουργία JUnit tests για όλες τις περιπτώσεις (≤500, >500, ≤600, >600 κ.λπ.)
+
+🐞 9. Data Clumping
+Πρόβλημα: Ο υπολογισμός κόστους περιέχει πολλές πληροφορίες που ίσως έπρεπε να είναι μέσα σε άλλη κλάση (π.χ. Meal).
+
+Λύση: Δημιουργία κλάσης Meal που να γνωρίζει το κόστος με βάση τύπο και αριθμό ατόμων.
+
+Θες να σου κάνω refactor τον κώδικα με βάση αυτές τις παρατηρήσεις;
+
+You said:
+https://refactoring.guru/refactoring/smells βρες απο δω τις κακες οσμες και περιεγραψε μου αυτες που εμφανιζονται στον κωδικα!!!!
+ChatGPT said:
+Τέλεια! Ας δούμε ποιες code smells από τη λίστα του refactoring.guru
+ εμφανίζονται στον κώδικά σου για την κλάση Wedding, και ας τις εξηγήσουμε:
+
+✅ 1. Long Method
+Περιγραφή: Μια μέθοδος κάνει πολλά πράγματα και γίνεται δύσκολη στην κατανόηση.
+
+Πού φαίνεται:
+
+calculateFoodCost() και calcPhotosCost() περιέχουν πολλή λογική.
+
+Refactor: Χώρισμα της λογικής σε υπομεθόδους ή μεταφορά σε άλλες κλάσεις (π.χ. CateringService).
+
+✅ 2. Primitive Obsession
+Περιγραφή: Χρήση βασικών τύπων (π.χ. double, int, String) αντί για αφηρημένους τύπους ή value objects.
+
+Πού φαίνεται:
+
+Κόστη γευμάτων (3, 3.5, 2, 2.5, 1, 0.75) και thresholds (500, 600) είναι απλοί αριθμοί στον κώδικα.
+
+Refactor: Ορισμός σταθερών (constants) ή κλάσεων όπως MealType, CateringPolicy, κ.λπ.
+
+✅ 3. Data Clumps
+Περιγραφή: Συχνή χρήση σχετιζόμενων μεταβλητών μαζί υποδεικνύει ότι θα έπρεπε να ανήκουν σε δική τους κλάση.
+
+Πού φαίνεται:
+
+Οι vegans και non_vegans χρησιμοποιούνται μαζί για τον υπολογισμό κόστους.
+
+Refactor: Δημιουργία κλάσης MealCount ή AttendeeStats.
+
+✅ 4. Feature Envy
+Περιγραφή: Μια μέθοδος δείχνει υπερβολικό ενδιαφέρον για τα δεδομένα άλλης κλάσης.
+
+Πού φαίνεται:
+
+Η Wedding ρωτά την Person αν είναι vegan. Αν η λογική για γεύματα αλλάξει, θα πρέπει να αλλάξει και η Wedding.
+
+Refactor: Μεταφορά της ευθύνης υπολογισμού τύπου γεύματος (ή του meal cost) στην ίδια την Person.
+
+✅ 5. Inappropriate Intimacy
+Περιγραφή: Δύο κλάσεις είναι υπερβολικά "δεμένες", γνωρίζοντας η μία τις λεπτομέρειες της άλλης.
+
+Πού φαίνεται:
+
+Η Wedding ξέρει πολλά για την εσωτερική λογική των Person (π.χ. αν είναι vegan).
+
+Refactor: Εισαγωγή abstraction (π.χ. MealPreference interface).
+
+✅ 6. God Object (God Class)
+Περιγραφή: Μια κλάση συγκεντρώνει πολλές ευθύνες.
+
+Πού φαίνεται:
+
+Η Wedding είναι υπεύθυνη για το χώρο, τους καλεσμένους, το φαγητό και τις φωτογραφίες.
+
+Refactor: Χωρισμός σε επιμέρους κλάσεις: CateringService, PhotographyService, GuestList.
+
+✅ 7. Magic Numbers
+Περιγραφή: Χρήση αριθμών με συγκεκριμένη σημασία χωρίς να είναι σαφές τι σημαίνουν.
+
+Πού φαίνεται:
+
+Οι τιμές 3, 3.5, 2, 2.5, 500, 600 είναι hardcoded.
+
+Refactor: Ορισμός private static final constants με περιγραφικά ονόματα.
+
+✅ 8. Switch Statements (ή Conditional Complexity)
+Περιγραφή: Πολύπλοκα if/else ή switch statements που θα μπορούσαν να αντικατασταθούν με polymorphism.
+
+Πού φαίνεται:
+
+Η λογική για το αν ισχύει η έκπτωση στο φαγητό ή στη φωτογράφηση.
+
+Refactor: Strategy Pattern ή χρήση Policy classes (π.χ. CateringPricingPolicy).
+
+✅ 9. Lazy Class (πιθανό)
+Περιγραφή: Κλάση που κάνει πολύ λίγα και δεν δικαιολογεί την ύπαρξή της.
+
+Πού φαίνεται:
+
+Αν η Person δεν κάνει τίποτα πέρα από το isVegan(), ίσως είναι υποψήφια.
+
+Refactor: Ή την εμπλουτίζεις ή συγχωνεύεις αν είναι όντως τελείως "τεμπέλικη".
+
+Θες να σου δείξω πώς θα φαινόταν ο refactored κώδικας με κάποιες από αυτές τις βελτιώσεις;
+
+You said:
+https://www.spinellis.gr/sw/ckjm/doc/metric.html ποιες από αυτές επηρεάζονται;
+ChatGPT said:
+Πολύ ωραία ερώτηση. Ο σύνδεσμος που έδωσες παραπέμπει σε CK (Chidamber & Kemerer) metrics, που είναι μετρικές μέτρησης ποιότητας αντικειμενοστραφούς κώδικα. Ας δούμε ποιες από αυτές επηρεάζονται από τις code smells που υπάρχουν στον κώδικά σου:
+
+📊 CK Metrics που επηρεάζονται από τον κώδικά σου
+✅ 1. WMC (Weighted Methods per Class)
+Τι μετράει: Πόσες μεθόδους έχει η κλάση (ή/και τη σχετική πολυπλοκότητά τους).
+
+Πώς επηρεάζεται:
+
+Οι μέθοδοι calculateFoodCost() και calcPhotosCost() είναι σχετικά μεγάλες.
+
+Αν προσθέσεις περισσότερα χαρακτηριστικά (π.χ. μουσική, διακόσμηση), η Wedding θα γίνει "God class" με υψηλό WMC.
+
+Συνέπεια: Δυσκολία στη συντήρηση και κατανόηση.
+
+✅ 2. DIT (Depth of Inheritance Tree)
+Τι μετράει: Το βάθος κληρονομικότητας της κλάσης.
+
+Πώς επηρεάζεται:
+
+Δεν υπάρχει απευθείας επηρεασμός στον τρέχοντα κώδικα (δεν χρησιμοποιείται κληρονομικότητα), αλλά:
+
+Αν εισαχθεί κληρονομικότητα για τύπους γάμων, πακέτα υπηρεσιών κ.λπ., τότε το DIT θα αυξηθεί.
+
+✅ 3. NOC (Number of Children)
+Τι μετράει: Πόσες κλάσεις κληρονομούν από αυτήν.
+
+Πώς επηρεάζεται:
+
+Επίσης όχι επηρεαζόμενο στον παρόντα κώδικα, εκτός αν η Wedding γίνει βάση για BeachWedding, LuxuryWedding κ.λπ.
+
+✅ 4. CBO (Coupling Between Object classes)
+Τι μετράει: Πόσες άλλες κλάσεις επηρεάζει/χρησιμοποιεί η κλάση.
+
+Πώς επηρεάζεται:
+
+Η Wedding είναι δεμένη με την Person (μέσω isVegan()).
+
+Αν προστεθούν άλλες υπηρεσίες (π.χ. Catering, Photographer, Decorator), το CBO θα αυξηθεί υπερβολικά.
+
+Refactor: Εισαγωγή abstraction ή service interfaces για χαμηλότερο coupling.
+
+✅ 5. RFC (Response For a Class)
+Τι μετράει: Πόσες μεθόδους μπορούν να κληθούν άμεσα ή έμμεσα από μια κλάση.
+
+Πώς επηρεάζεται:
+
+Η Wedding καλεί people.size(), p.isVegan(), και έχει δικές της μεθόδους.
+
+Αν προσθέσουμε επιπλέον λειτουργίες, το RFC αυξάνεται.
+
+Συνέπεια: Αυξημένη πολυπλοκότητα και πιθανότητες σφαλμάτων.
+
+✅ 6. LCOM (Lack of Cohesion in Methods)
+Τι μετράει: Πόσο άσχετες είναι μεταξύ τους οι μέθοδοι της κλάσης (χαμηλή συνοχή).
+
+Πώς επηρεάζεται:
+
+Η calculateFoodCost() και η calcPhotosCost() δεν έχουν ιδιαίτερη συνοχή μεταξύ τους.
+
+Αν προσθέσεις ακόμα περισσότερες υπηρεσίες (μουσική, διακόσμηση), η συνοχή πέφτει.
+
+Refactor: Διαχωρισμός σε ξεχωριστές κλάσεις (π.χ. CateringService, PhotoService).
+
+✅ 7. Ca (Afferent Couplings)
+Τι μετράει: Πόσες άλλες κλάσεις εξαρτώνται από αυτήν.
+
+Πώς επηρεάζεται:
+
+Αν πολλές κλάσεις χρησιμοποιούν τη Wedding, το Ca αυξάνεται.
+
+Δεν επηρεάζεται άμεσα από τα code smells, αλλά είναι σημαντικό να το παρακολουθείς.
+
+✅ 8. NPM (Number of Public Methods)
+Τι μετράει: Πόσες δημόσιες μέθοδοι έχει μια κλάση.
+
+Πώς επηρεάζεται:
+
+Αν προσθέσεις πολλές get/set ή utility μεθόδους στη Wedding, το NPM αυξάνεται υπερβολικά.
+
+🔚 Συμπέρασμα
+Τα πιο επηρεαζόμενα metrics από τα code smells στον κώδικά σου είναι:
+
+Metric	Επηρεάζεται	Σημείωση
+WMC	✅	Πολυπλοκότητα μεθόδων
+CBO	✅	Υψηλό coupling με Person
+RFC	✅	Πολλές κλήσεις και πιθανές εξαρτήσεις
+LCOM	✅	Μέθοδοι χωρίς συνοχή
+NPM	✅	Αν επεκταθεί
+DIT/NOC	❌ (προς το παρόν)	Δεν υπάρχει κληρονομικότητα
+Ca	❌	Εξαρτάται από χρήση από άλλες κλάσεις
+Αν θέλεις, μπορώ να σου φτιάξω ένα refactored παράδειγμα ώστε να βελτιωθούν αυτά τα metrics. Θες;
+
+You said:
+Ονοματίστε ποια σχεδιαστική αρχή ή πρότυπο σχεδίασης θα μπορούσε να εφαρμοστεί για την βελτίωση της ποιότητας του κώδικα.
+ChatGPT said:
+Για τη βελτίωση της ποιότητας του κώδικά σου, μπορούμε να εφαρμόσουμε σχεδιαστικές αρχές (SOLID) και σχεδιαστικά πρότυπα (Design Patterns) που αντιμετωπίζουν άμεσα τα code smells που εντοπίσαμε.
+
+🧭 Σχεδιαστικές Αρχές (SOLID)
+✅ S – Single Responsibility Principle (SRP)
+Τι λέει: Κάθε κλάση πρέπει να έχει μία μόνο ευθύνη.
+
+Εφαρμογή: Η Wedding έχει πολλές ευθύνες (καλεσμένοι, φαγητό, φωτογραφίες).
+
+Τι να κάνεις: Διαχωρισμός σε:
+
+GuestList
+
+CateringService
+
+PhotographyService
+
+✅ O – Open/Closed Principle (OCP)
+Τι λέει: Οι κλάσεις πρέπει να είναι ανοιχτές για επέκταση, κλειστές για τροποποίηση.
+
+Εφαρμογή: Αν αλλάξει ο τρόπος κοστολόγησης, σήμερα θα πρέπει να πειράξουμε τη Wedding.
+
+Τι να κάνεις: Εισαγωγή strategy interfaces για το κόστος:
+
+interface CateringCostCalculator {
+    double calculate(List<Person> people);
+}
+✅ L – Liskov Substitution Principle (LSP)
+Τι λέει: Οι υποκλάσεις πρέπει να μπορούν να αντικαθιστούν τις υπερκλάσεις χωρίς προβλήματα.
+
+Εφαρμογή: Αν έχεις StandardWedding και LuxuryWedding, φρόντισε να μη σπάνε τη λογική της Wedding.
+
+✅ I – Interface Segregation Principle (ISP)
+Τι λέει: Οι κλάσεις δεν πρέπει να εξαναγκάζονται να υλοποιούν interfaces που δεν χρησιμοποιούν.
+
+Εφαρμογή: Αν δημιουργήσεις μεγάλα interfaces π.χ. EventService, χώρισέ τα σε πιο εξειδικευμένα.
+
+✅ D – Dependency Inversion Principle (DIP)
+Τι λέει: Οι εξαρτήσεις πρέπει να είναι από αφαιρέσεις (interfaces), όχι από συγκεκριμένες υλοποιήσεις.
+
+Εφαρμογή: Η Wedding εξαρτάται απευθείας από λογική (π.χ. τιμές φαγητού).
+
+Τι να κάνεις: Εισαγωγή εξαρτήσεων μέσω interfaces/constructors.
+
+🎯 Design Patterns που ταιριάζουν
+✅ Strategy Pattern
+Τι κάνει: Επιτρέπει την εναλλαγή μεταξύ διαφορετικών αλγορίθμων δυναμικά.
+
+Εφαρμογή:
+
+CateringCostStrategy για διαφορετικά σενάρια κοστολόγησης.
+
+PhotoCostStrategy για διαφορετικές πολιτικές φωτογράφου.
+
+✅ Factory Method Pattern
+Τι κάνει: Δημιουργεί αντικείμενα χωρίς να προσδιορίζεις την ακριβή κλάση.
+
+Εφαρμογή:
+
+Για δημιουργία Wedding αντικειμένων διαφορετικών τύπων: BasicWeddingFactory, LuxuryWeddingFactory.
+
+✅ Decorator Pattern
+Τι κάνει: Επιτρέπει την επέκταση συμπεριφοράς αντικειμένων χωρίς αλλαγή της δομής τους.
+
+Εφαρμογή: Προσθήκη υπηρεσιών σε ένα Wedding (π.χ. DJ, Catering) δυναμικά.
+
+✅ Composition over Inheritance
+Τι κάνει: Προτιμάς σύνθεση αντί για κληρονομικότητα για μεγαλύτερη ευελιξία.
+
+Εφαρμογή: Το Wedding να συνθέτει υπηρεσίες (π.χ. CateringService) αντί να τις επεκτείνει.
+
+✅ Command Pattern (προαιρετικό)
+Τι κάνει: Αντιμετωπίζει τις ενέργειες ως αντικείμενα.
+
+Εφαρμογή: Αν θέλεις να υποστηρίξεις undo/redo ή dynamic service handling (π.χ. add/remove services).
+
+🔚 Συμπέρασμα
+Πεδίο	Τεχνική Βελτίωσης
+Υπερβολική ευθύνη Wedding	SRP + Strategy Pattern
+Σταθερή λογική για κόστος	OCP + DIP
+Κόστος φαγητού/φωτογράφου	Strategy Pattern
+Επέκταση γάμου με άλλες υπηρεσίες	Decorator Pattern
+Αποσύνδεση υλοποιήσεων	DIP + Interface Injection
+Θες να δεις ένα παράδειγμα εφαρμογής Strategy Pattern για το catering cost;
+
+You said:
+ΔΙΑΛΕΞΕ ΜΙΑ ΑΡΧΗ ΚΑΙ ΕΝΑ PATTERN (σχετική πηγή https://refactoring.guru/design-patterns)
+ChatGPT said:
+Φυσικά! Παρακάτω σου προτείνω μία αρχή σχεδίασης (από τις SOLID) και ένα κατάλληλο Design Pattern από το refactoring.guru
+, πλήρως προσαρμοσμένα στον προβληματικό σου κώδικα.
+
+✅ Επιλεγμένη Αρχή: Single Responsibility Principle (SRP)
+📖 refactoring.guru: SRP
+
+✔ Τι λέει:
+"Μια κλάση πρέπει να έχει έναν και μόνο λόγο να αλλάξει."
+
+✔ Εφαρμογή στον κώδικά σου:
+Η κλάση Wedding παραβιάζει το SRP γιατί:
+
+Διαχειρίζεται τους καλεσμένους.
+
+Υπολογίζει το κόστος φαγητού.
+
+Υπολογίζει το κόστος φωτογράφου.
+
+✔ Πώς διορθώνεται:
+Διαχωρίζοντας σε επιμέρους κλάσεις:
+
+Wedding: μόνο ο χώρος και οι καλεσμένοι.
+
+CateringService: υπολογίζει το κόστος φαγητού.
+
+PhotographyService: υπολογίζει το κόστος φωτογράφου.
+
+🎯 Επιλεγμένο Design Pattern: Strategy Pattern
+📖 refactoring.guru: Strategy Pattern
+
+✔ Τι κάνει:
+"Επιτρέπει στον αλγόριθμο να μεταβληθεί ανεξάρτητα από τους πελάτες που τον χρησιμοποιούν."
+
+✔ Εφαρμογή στον κώδικά σου:
+Ο υπολογισμός του κόστους φαγητού αλλάζει ανάλογα με τον αριθμό καλεσμένων.
+
+Μπορείς να δημιουργήσεις δύο στρατηγικές:
+
+StandardCateringCostStrategy
+
+DiscountCateringCostStrategy
+
+✔ Πλεονεκτήματα:
+Η Wedding δεν χρειάζεται να γνωρίζει τους κανόνες κοστολόγησης.
+
+Εύκολη επέκταση αν προστεθούν νέες πολιτικές (π.χ. VIP μενού).
+
+🧩 Παράδειγμα Κώδικα (Strategy Pattern)
+interface CateringCostStrategy {
+    double calculateCost(List<Person> people);
+}
+
+class StandardCateringCost implements CateringCostStrategy {
+    public double calculateCost(List<Person> people) {
+        long vegans = people.stream().filter(Person::isVegan).count();
+        long nonVegans = people.size() - vegans;
+        return nonVegans * 3 + vegans * 3.5;
+    }
+}
+
+class DiscountCateringCost implements CateringCostStrategy {
+    public double calculateCost(List<Person> people) {
+        long vegans = people.stream().filter(Person::isVegan).count();
+        long nonVegans = people.size() - vegans;
+        return nonVegans * 2 + vegans * 2.5;
+    }
+}
+
+class CateringService {
+    private CateringCostStrategy strategy;
+
+    public CateringService(CateringCostStrategy strategy) {
+        this.strategy = strategy;
+    }
+
+    public double calculateFoodCost(List<Person> people) {
+        return strategy.calculateCost(people);
+    }
+}
+✅ Τι πετυχαίνουμε:
+Με το SRP, κάθε κλάση κάνει μόνο ένα πράγμα.
+
+Με το Strategy Pattern, μπορούμε να αλλάζουμε δυναμικά την πολιτική κοστολόγησης φαγητού.
+
+Αν θες, μπορώ να σου δείξω και πώς θα αλλάξει η κλάση Wedding για να χρησιμοποιεί αυτό το pattern. Θες;
+
+You said:
+ξαναγράωε τον κώδικα με τις απαραίτητες αλλαγές ώστε να τηρεί αυτή την αρχή και το pattern
+ChatGPT said:
+Ορίστε ο ανασχεδιασμένος κώδικας που εφαρμόζει:
+
+✅ Single Responsibility Principle (SRP) — κάθε κλάση έχει μία ευθύνη.
+
+✅ Strategy Pattern — ο υπολογισμός κόστους φαγητού μεταβιβάζεται σε εναλλάξιμες στρατηγικές.
+
+✅ Ανασχεδιασμένος Κώδικας
+👤 Person (υπάρχουσα)
+public class Person {
+    private String name;
+    private boolean vegan;
+
+    public Person(String name, boolean vegan) {
+        this.name = name;
+        this.vegan = vegan;
+    }
+
+    public boolean isVegan() {
+        return vegan;
+    }
+}
+🧠 CateringCostStrategy (Strategy interface)
+public interface CateringCostStrategy {
+    double calculateCost(List<Person> people);
+}
+🍽️ StandardCateringCost (χωρίς έκπτωση)
+public class StandardCateringCost implements CateringCostStrategy {
+    public double calculateCost(List<Person> people) {
+        long vegans = people.stream().filter(Person::isVegan).count();
+        long nonVegans = people.size() - veg
+You said:
+σε ενα μπλοκ
+ChatGPT said:
+Φυσικά! Ορίστε όλος ο κώδικας σε ένα ενιαίο μπλοκ, με εφαρμογή του Single Responsibility Principle και του Strategy Pattern:
+
+import java.util.ArrayList;
+import java.util.List;
+
+// Person class (υπόθεση)
+class Person {
+    private String name;
+    private boolean vegan;
+
+    public Person(String name, boolean vegan) {
+        this.name = name;
+        this.vegan = vegan;
+    }
+
+    public boolean isVegan() {
+        return vegan;
+    }
+}
+
+// Strategy interface για κόστος catering
+interface CateringCostStrategy {
+    double calculateCost(List<Person> people);
+}
+
+// Standard κοστολόγηση (<= 500 άτομα)
+class StandardCateringCost implements CateringCostStrategy {
+    public double calculateCost(List<Person> people) {
+        long vegans = people.stream().filter(Person::isVegan).count();
+        long nonVegans = people.size() - vegans;
+        return nonVegans * 3.0 + vegans * 3.5;
+    }
+}
+
+// Discount κοστολόγηση (> 500 άτομα)
+class DiscountCateringCost implements CateringCostStrategy {
+    public double calculateCost(List<Person> people) {
+        long vegans = people.stream().filter(Person::isVegan).count();
+        long nonVegans = people.size() - vegans;
+        return nonVegans * 2.0 + vegans * 2.5;
+    }
+}
+
+// Service που χρησιμοποιεί την κατάλληλη στρατηγική catering
+class CateringService {
+    private CateringCostStrategy strategy;
+
+    public CateringService(CateringCostStrategy strategy) {
+        this.strategy = strategy;
+    }
+
+    public void setStrategy(CateringCostStrategy strategy) {
+        this.strategy = strategy;
+    }
+
+    public double calculateFoodCost(List<Person> people) {
+        return strategy.calculateCost(people);
+    }
+}
+
+// Service για υπολογισμό κόστους φωτογράφου
+class PhotographyService {
+    public double calculatePhotoCost(List<Person> people) {
+        int count = people.size();
+        if (count > 600) {
+            return count * 0.75;
+        } else {
+            return count * 1.0;
+        }
+    }
+}
+
+// Κύρια κλάση Wedding που διαχειρίζεται μόνο venue και people
+class Wedding {
+    private String venue;
+    private List<Person> people;
+    private CateringService cateringService;
+    private PhotographyService photographyService;
+
+    public Wedding(String venue) {
+        this.venue = venue;
+        this.people = new ArrayList<>();
+        this.cateringService = null; // θα οριστεί ανάλογα
+        this.photographyService = new PhotographyService();
+    }
+
+    public void addPerson(Person p) {
+        this.people.add(p);
+        updateCateringStrategy();
+    }
+
+    private void updateCateringStrategy() {
+        if (people.size() > 500) {
+            this.cateringService = new CateringService(new DiscountCateringCost());
+        } else {
+            this.cateringService = new CateringService(new StandardCateringCost());
+        }
+    }
+
+    public double calculateFoodCost() {
+        if (cateringService == null) {
+            updateCateringStrategy();
+        }
+        return cateringService.calculateFoodCost(people);
+    }
+
+    public double calculatePhotoCost() {
+        return photographyService.calculatePhotoCost(people);
+    }
+
+    public String getVenue() {
+        return venue;
+    }
+
+    public List<Person> getPeople() {
+        return people;
+    }
+}
+Σημεία που να προσέξεις:
+Η κλάση Wedding δεν υπολογίζει η ίδια το κόστος — απλά διαχειρίζεται τη λίστα των καλεσμένων και το venue.
+
+Η κοστολόγηση φαγητού γίνεται μέσω του Strategy Pattern με τις κλάσεις StandardCateringCost και DiscountCateringCost.
+
+Η PhotographyService είναι ανεξάρτητη και μεμονωμένη, διατηρώντας το SRP.
+
+Η στρατηγική catering ενημερώνεται αυτόματα κάθε φορά που προστίθεται νέος καλεσμένος.
+
+Αν θέλεις, μπορώ να σε βοηθήσω να κάνεις refactor και για άλλες υπηρεσίες!
+
+You said:
+μήπως να κάνεις κλάση για vegan και non vegan?
+ChatGPT said:
+Καλή σκέψη! Η ιδέα να έχεις ξεχωριστές κλάσεις για Vegan και NonVegan άτομα (π.χ. υποκλάσεις της Person) μπορεί να βελτιώσει τον κώδικα με μεθόδους πολυμορφισμού και να αφαιρέσει το if (p.isVegan()) μέσα στους υπολογισμούς.
+
+Πλεονεκτήματα αυτής της προσέγγισης:
+Αποφεύγεις if ή switch που βασίζονται σε κατάσταση (π.χ. vegan ή όχι).
+
+Κάθε υποκλάση μπορεί να επιστρέφει το δικό της κόστος γεύματος, άρα ο υπολογισμός γίνεται πιο ευέλικτος και επεκτάσιμος.
+
+Ακολουθείς το Open/Closed Principle (OCP) — μπορείς να προσθέσεις και άλλους τύπους ατόμων (π.χ. gluten-free) χωρίς να πειράξεις τον κώδικα.
+
+Πώς μπορεί να γίνει:
+abstract class Person {
+    private String name;
+    public Person(String name) { this.name = name; }
+    public abstract double getMealCost();
+}
+
+class Vegan extends Person {
+    public Vegan(String name) { super(name); }
+    public double getMealCost() { return 3.5; }
+}
+
+class NonVegan extends Person {
+    public NonVegan(String name) { super(name); }
+    public double getMealCost() { return 3.0; }
+}
+Τότε, το CateringCostStrategy γίνεται απλούστερο:
+public double calculateCost(List<Person> people) {
+    double total = 0;
+    for (Person p : people) {
+        total += p.getMealCost();
+    }
+    return total;
+}
+Και για το discount scenario αντίστοιχα:
+
+class DiscountVegan extends Vegan {
+    public DiscountVegan(String name) { super(name); }
+    public double getMealCost() { return 2.5; }
+}
+
+class DiscountNonVegan extends NonVegan {
+    public DiscountNonVegan(String name) { super(name); }
+    public double getMealCost() { return 2.0; }
+}
+Και η λίστα καλεσμένων θα έχει αντικείμενα της κατάλληλης υποκλάσης ανάλογα με το πλήθος.
+
+Συμπέρασμα
+✔️ Με αυτό τον τρόπο εκμεταλλεύεσαι τον πολυμορφισμό και:
+
+Απλοποιείς τη λογική κοστολόγησης.
+
+Ελαχιστοποιείς if/else.
+
+Εύκολη επέκταση για νέους τύπους καλεσμένων.
+
+Θες να σου κάνω ανασχεδιασμό ολόκληρου του κώδικα με αυτή την προσέγγιση;
+
+You said:
+γράψτο με αυτό ξανα όλο σε ένα μπλοκ
+ChatGPT said:
+Φυσικά! Ορίστε ο πλήρης κώδικας σε ένα μπλοκ, όπου εφαρμόζουμε κλάσεις για Vegan και NonVegan με πολυμορφισμό ώστε να υπολογίζεται το κόστος γεύματος, μαζί με το Strategy Pattern για τις τιμές ανάλογα με τον αριθμό των καλεσμένων:
+
+import java.util.ArrayList;
+import java.util.List;
+
+// Abstract Person class με μέθοδο για κόστος γεύματος
+abstract class Person {
+    protected String name;
+
+    public Person(String name) {
+        this.name = name;
+    }
+
+    // Επιστρέφει το κόστος γεύματος για το άτομο, που μπορεί να αλλάξει ανάλογα με την έκπτωση
+    public abstract double getMealCost();
+}
+
+// Vegan κλάση με βασικό κόστος
+class Vegan extends Person {
+    public Vegan(String name) {
+        super(name);
+    }
+
+    @Override
+    public double getMealCost() {
+        return 3.5;
+    }
+}
+
+// NonVegan κλάση με βασικό κόστος
+class NonVegan extends Person {
+    public NonVegan(String name) {
+        super(name);
+    }
+
+    @Override
+    public double getMealCost() {
+        return 3.0;
+    }
+}
+
+// Εκδοχές με έκπτωση (Discount) για μεγαλύτερα γκρουπ
+class DiscountVegan extends Vegan {
+    public DiscountVegan(String name) {
+        super(name);
+    }
+
+    @Override
+    public double getMealCost() {
+        return 2.5;
+    }
+}
+
+class DiscountNonVegan extends NonVegan {
+    public DiscountNonVegan(String name) {
+        super(name);
+    }
+
+    @Override
+    public double getMealCost() {
+        return 2.0;
+    }
+}
+
+// Strategy interface για κοστολόγηση catering
+interface CateringCostStrategy {
+    double calculateCost(List<Person> people);
+}
+
+// Στρατηγική για κανονικό κόστος
+class StandardCateringCost implements CateringCostStrategy {
+    public double calculateCost(List<Person> people) {
+        double total = 0;
+        for (Person p : people) {
+            total += p.getMealCost();
+        }
+        return total;
+    }
+}
+
+// Στρατηγική για discounted κόστος
+class DiscountCateringCost implements CateringCostStrategy {
+    public double calculateCost(List<Person> people) {
+        double total = 0;
+        for (Person p : people) {
+            total += p.getMealCost();
+        }
+        return total;
+    }
+}
+
+// CateringService που χρησιμοποιεί τη στρατηγική
+class CateringService {
+    private CateringCostStrategy strategy;
+
+    public CateringService(CateringCostStrategy strategy) {
+        this.strategy = strategy;
+    }
+
+    public void setStrategy(CateringCostStrategy strategy) {
+        this.strategy = strategy;
+    }
+
+    public double calculateFoodCost(List<Person> people) {
+        return strategy.calculateCost(people);
+    }
+}
+
+// Υπολογισμός κόστους φωτογράφου
+class PhotographyService {
+    public double calculatePhotoCost(List<Person> people) {
+        int count = people.size();
+        if (count > 600) {
+            return count * 0.75;
+        } else {
+            return count * 1.0;
+        }
+    }
+}
+
+// Κύρια κλάση Wedding
+class Wedding {
+    private String venue;
+    private List<Person> people;
+    private CateringService cateringService;
+    private PhotographyService photographyService;
+
+    public Wedding(String venue) {
+        this.venue = venue;
+        this.people = new ArrayList<>();
+        this.photographyService = new PhotographyService();
+        this.cateringService = new CateringService(new StandardCateringCost());
+    }
+
+    // Προσθέτουμε άτομα στη λίστα με σωστό τύπο ανάλογα με το μέγεθος
+    public void addPerson(Person p) {
+        // Αν έχουμε ήδη πάνω από 500 άτομα, χρησιμοποιούμε εκδοχές με έκπτωση
+        if (people.size() >= 500) {
+            // Μετατρέπουμε το άτομο σε discounted έκδοση
+            Person discountedPerson = convertToDiscountedPerson(p);
+            people.add(discountedPerson);
+            cateringService.setStrategy(new DiscountCateringCost());
+        } else {
+            people.add(p);
+            cateringService.setStrategy(new StandardCateringCost());
+        }
+    }
+
+    // Βοηθητική μέθοδος μετατροπής ατόμου σε έκδοση με έκπτωση
+    private Person convertToDiscountedPerson(Person p) {
+        if (p instanceof Vegan) {
+            return new DiscountVegan(p.name);
+        } else if (p instanceof NonVegan) {
+            return new DiscountNonVegan(p.name);
+        }
+        // Αν υπάρχουν και άλλοι τύποι, εδώ θα προστεθούν
+        return p;
+    }
+
+    public double calculateFoodCost() {
+        return cateringService.calculateFoodCost(people);
+    }
+
+    public double calculatePhotoCost() {
+        return photographyService.calculatePhotoCost(people);
+    }
+
+    public String getVenue() {
+        return venue;
+    }
+
+    public List<Person> getPeople() {
+        return people;
+    }
+}
+Σημειώσεις:
+Με τον πολυμορφισμό, κάθε Person ξέρει πόσο κοστίζει το γεύμα του.
+
+Όταν ξεπεράσουμε 500 άτομα, τα άτομα που προστίθενται γίνονται Discount εκδοχές (χαμηλότερο κόστος).
+
+Η CateringService χρησιμοποιεί ανάλογη στρατηγική (StandardCateringCost ή DiscountCateringCost), αν και στον τωρινό κώδικα οι στρατηγικές κάνουν το ίδιο πράγμα (γιατί το κόστος μεταφέρεται πλέον στην κλάση Person).
+
+Ο κώδικας είναι εύκολα επεκτάσιμος αν προστεθούν νέοι τύποι ατόμων ή νέες πολιτικές κόστους.
+
+Αν θέλεις, μπορώ να σε βοηθήσω και με δείγματα χρήσης ή περαιτέρω βελτιώσεις!
+
+You said:
+όχι ξεχωριστή κλάση για DiscountNonVegan και DiscountVegan. κάνε μεθόδους
+ChatGPT said:
+Κατάλαβα! Θέλεις να διατηρήσουμε μόνο τις κλάσεις Vegan και NonVegan χωρίς ξεχωριστές Discount υποκλάσεις και να υλοποιήσουμε την αλλαγή κόστους με μεθόδους που λαμβάνουν υπόψη αν ισχύει έκπτωση ή όχι.
+
+Ορίστε λοιπόν ο πλήρης κώδικας σε ένα μπλοκ, όπου το κόστος γεύματος υπολογίζεται από κάθε Person με παράμετρο isDiscounted, και το CateringCostStrategy ελέγχει αν ισχύει η έκπτωση και το περνάει:
+
+import java.util.ArrayList;
+import java.util.List;
+
+// Abstract Person class με μέθοδο για κόστος γεύματος
+abstract class Person {
+    protected String name;
+
+    public Person(String name) {
+        this.name = name;
+    }
+
+    // Υπολογίζει το κόστος γεύματος ανάλογα αν ισχύει έκπτωση ή όχι
+    public abstract double getMealCost(boolean isDiscounted);
+}
+
+// Vegan κλάση
+class Vegan extends Person {
+    public Vegan(String name) {
+        super(name);
+    }
+
+    @Override
+    public double getMealCost(boolean isDiscounted) {
+        return isDiscounted ? 2.5 : 3.5;
+    }
+}
+
+// NonVegan κλάση
+class NonVegan extends Person {
+    public NonVegan(String name) {
+        super(name);
+    }
+
+    @Override
+    public double getMealCost(boolean isDiscounted) {
+        return isDiscounted ? 2.0 : 3.0;
+    }
+}
+
+// Strategy interface για κοστολόγηση catering
+interface CateringCostStrategy {
+    double calculateCost(List<Person> people);
+}
+
+// Στρατηγική που ελέγχει αν ισχύει έκπτωση βάσει αριθμού ατόμων
+class CateringCostCalculator implements CateringCostStrategy {
+    private static final int DISCOUNT_THRESHOLD = 500;
+
+    public double calculateCost(List<Person> people) {
+        boolean discount = people.size() > DISCOUNT_THRESHOLD;
+        double total = 0;
+        for (Person p : people) {
+            total += p.getMealCost(discount);
+        }
+        return total;
+    }
+}
+
+// Υπολογισμός κόστους φωτογράφου
+class PhotographyService {
+    public double calculatePhotoCost(List<Person> people) {
+        int count = people.size();
+        if (count > 600) {
+            return count * 0.75;
+        } else {
+            return count * 1.0;
+        }
+    }
+}
+
+// Κύρια κλάση Wedding
+class Wedding {
+    private String venue;
+    private List<Person> people;
+    private CateringCostStrategy cateringStrategy;
+    private PhotographyService photographyService;
+
+    public Wedding(String venue) {
+        this.venue = venue;
+        this.people = new ArrayList<>();
+        this.cateringStrategy = new CateringCostCalculator();
+        this.photographyService = new PhotographyService();
+    }
+
+    public void addPerson(Person p) {
+        this.people.add(p);
+    }
+
+    public double calculateFoodCost() {
+        return cateringStrategy.calculateCost(people);
+    }
+
+    public double calculatePhotoCost() {
+        return photographyService.calculatePhotoCost(people);
+    }
+
+    public String getVenue() {
+        return venue;
+    }
+
+    public List<Person> getPeople() {
+        return people;
+    }
+}
+Τι άλλαξε:
+Δεν υπάρχουν ξεχωριστές κλάσεις DiscountVegan / DiscountNonVegan.
+
+Η μέθοδος getMealCost(boolean isDiscounted) επιστρέφει την τιμή ανάλογα με το αν ισχύει έκπτωση.
+
+Η στρατηγική κοστολόγησης (CateringCostCalculator) αποφασίζει αν υπάρχει έκπτωση με βάση το πλήθος καλεσμένων και περνάει αυτήν την πληροφορία στην κλήση του getMealCost.
+
+Αν θέλεις, μπορώ να σου φτιάξω και ένα μικρό demo για να δεις τη χρήση!
+
+You said:
+κάνε το PhotographyService method
+ChatGPT said:
+Φυσικά! Θα ενσωματώσουμε τη λειτουργία του PhotographyService ως μέθοδο μέσα στην κλάση Wedding, ώστε να μην έχουμε ξεχωριστή κλάση για αυτή τη λειτουργία.
+
+Ορίστε ο ενημερωμένος κώδικας με την calculatePhotoCost μέθοδο μέσα στην Wedding:
+
+import java.util.ArrayList;
+import java.util.List;
+
+// Abstract Person class με μέθοδο για κόστος γεύματος
+abstract class Person {
+    protected String name;
+
+    public Person(String name) {
+        this.name = name;
+    }
+
+    // Υπολογίζει το κόστος γεύματος ανάλογα αν ισχύει έκπτωση ή όχι
+    public abstract double getMealCost(boolean isDiscounted);
+}
+
+// Vegan κλάση
+class Vegan extends Person {
+    public Vegan(String name) {
+        super(name);
+    }
+
+    @Override
+    public double getMealCost(boolean isDiscounted) {
+        return isDiscounted ? 2.5 : 3.5;
+    }
+}
+
+// NonVegan κλάση
+class NonVegan extends Person {
+    public NonVegan(String name) {
+        super(name);
+    }
+
+    @Override
+    public double getMealCost(boolean isDiscounted) {
+        return isDiscounted ? 2.0 : 3.0;
+    }
+}
+
+// Strategy interface για κοστολόγηση catering
+interface CateringCostStrategy {
+    double calculateCost(List<Person> people);
+}
+
+// Στρατηγική που ελέγχει αν ισχύει έκπτωση βάσει αριθμού ατόμων
+class CateringCostCalculator implements CateringCostStrategy {
+    private static final int DISCOUNT_THRESHOLD = 500;
+
+    public double calculateCost(List<Person> people) {
+        boolean discount = people.size() > DISCOUNT_THRESHOLD;
+        double total = 0;
+        for (Person p : people) {
+            total += p.getMealCost(discount);
+        }
+        return total;
+    }
+}
+
+// Κύρια κλάση Wedding
+class Wedding {
+    private String venue;
+    private List<Person> people;
+    private CateringCostStrategy cateringStrategy;
+
+    public Wedding(String venue) {
+        this.venue = venue;
+        this.people = new ArrayList<>();
+        this.cateringStrategy = new CateringCostCalculator();
+    }
+
+    public void addPerson(Person p) {
+        this.people.add(p);
+    }
+
+    public double calculateFoodCost() {
+        return cateringStrategy.calculateCost(people);
+    }
+
+    // Υπολογισμός κόστους φωτογράφου ως μέθοδος εδώ
+    public double calculatePhotoCost() {
+        int count = people.size();
+        if (count > 600) {
+            return count * 0.75;
+        } else {
+            return count * 1.0;
+        }
+    }
+
+    public String getVenue() {
+        return venue;
+    }
+
+    public List<Person> getPeople() {
+        return people;
+    }
+}
+Τώρα η φωτογραφία είναι απλή μέθοδος της Wedding, που υπολογίζει το κόστος ανάλογα με το πλήθος των καλεσμένων.
+
+Θέλεις να φτιάξω και παράδειγμα χρήσης για να το δεις σε δράση;
+
+You said:
+// Strategy interface για κοστολόγηση catering
+interface CateringCostStrategy {
+    double calculateCost(List<Person> people);
+}
+
+// Στρατηγική που ελέγχει αν ισχύει έκπτωση βάσει αριθμού ατόμων
+class CateringCostCalculator implements CateringCostStrategy {
+    private static final int DISCOUNT_THRESHOLD = 500;
+
+    public double calculateCost(List<Person> people) {
+        boolean discount = people.size() > DISCOUNT_THRESHOLD;
+        double total = 0;
+        for (Person p : people) {
+            total += p.getMealCost(discount);
+        }
+        return total;
+    }
+}
+
+γιατί δεν τα κάνεις μεθόδους στην κλάση wedding; προσπάθησε το
+ChatGPT said:
+Σίγουρα! Αν θέλουμε να απλοποιήσουμε τον κώδικα και να μην χρησιμοποιήσουμε ξεχωριστό interface και κλάση για το στρατηγικό υπολογισμό κόστους catering, μπορούμε να μεταφέρουμε όλη τη λογική ως μεθόδους μέσα στην κλάση Wedding.
+
+Έτσι:
+
+Δεν χρειάζεται το CateringCostStrategy interface.
+
+Όλη η λογική για τον υπολογισμό κόστους φαγητού γίνεται σε μία ή περισσότερες μεθόδους μέσα στην Wedding.
+
+Κρατάμε μόνο τη μέθοδο που ελέγχει αν ισχύει έκπτωση και υπολογίζει το συνολικό κόστος.
+
+Ορίστε πώς γίνεται αυτό σε έναν ενιαίο κώδικα:
+
+import java.util.ArrayList;
+import java.util.List;
+
+abstract class Person {
+    protected String name;
+
+    public Person(String name) {
+        this.name = name;
+    }
+
+    public abstract double getMealCost(boolean isDiscounted);
+}
+
+class Vegan extends Person {
+    public Vegan(String name) {
+        super(name);
+    }
+
+    @Override
+    public double getMealCost(boolean isDiscounted) {
+        return isDiscounted ? 2.5 : 3.5;
+    }
+}
+
+class NonVegan extends Person {
+    public NonVegan(String name) {
+        super(name);
+    }
+
+    @Override
+    public double getMealCost(boolean isDiscounted) {
+        return isDiscounted ? 2.0 : 3.0;
+    }
+}
+
+class Wedding {
+    private static final int DISCOUNT_THRESHOLD = 500;
+    private static final int PHOTO_DISCOUNT_THRESHOLD = 600;
+
+    private String venue;
+    private List<Person> people;
+
+    public Wedding(String venue) {
+        this.venue = venue;
+        this.people = new ArrayList<>();
+    }
+
+    public void addPerson(Person p) {
+        people.add(p);
+    }
+
+    public double calculateFoodCost() {
+        boolean discount = people.size() > DISCOUNT_THRESHOLD;
+        double total = 0;
+        for (Person p : people) {
+            total += p.getMealCost(discount);
+        }
+        return total;
+    }
+
+    public double calculatePhotoCost() {
+        int count = people.size();
+        if (count > PHOTO_DISCOUNT_THRESHOLD) {
+            return count * 0.75;
+        } else {
+            return count * 1.0;
+        }
+    }
+
+    public String getVenue() {
+        return venue;
+    }
+
+    public List<Person> getPeople() {
+        return people;
+    }
+}
+Τι άλλαξε:
+Ο κώδικας έγινε πιο απλός, χωρίς interfaces και ξεχωριστές κλάσεις στρατηγικής.
+
+Η μέθοδος calculateFoodCost() ελέγχει αν ισχύει η έκπτωση και υπολογίζει το συνολικό κόστος γεύματος.
+
+Όλα τα σχετικά δεδομένα και λειτουργίες είναι συγκεντρωμένα στην κλάση Wedding.
+
+Η μέθοδος calculatePhotoCost() παραμένει απλή, με λογική για έκπτωση φωτογράφου.
+
+Αν θες, μπορώ να σε βοηθήσω να επεκτείνεις ή να προσθέσουμε κάποια δοκιμαστική χρήση!
+
+You said:
+με βάση αυτόν τον κώδικα, ποια επέκταση θα μπορούσε να γίνει και γιατι ευνοείται από τον πειραγμένο κώδικα και όχι από τον προηγούμενο;
+ChatGPT said:
+Καλή ερώτηση!
+
+Ποια επέκταση μπορεί να γίνει εύκολα με τον «πειραγμένο» (απλοποιημένο) κώδικα;
+Π.χ. να προστεθούν νέοι τύποι γευμάτων (π.χ. GlutenFree, Vegetarian, Keto κλπ) με διαφορετικά κόστη, ή/και νέοι κανόνες έκπτωσης που βασίζονται σε άλλα κριτήρια (π.χ. ημέρα, εποχή, προ-παραγγελία).
+
+Γιατί αυτή η επέκταση ευνοείται από τον πειραγμένο κώδικα (μεθόδων μέσα στην κλάση Wedding) και όχι από τον προηγούμενο με το Strategy Pattern;
+Απλότητα:
+Όλα τα δεδομένα και η λογική βρίσκονται συγκεντρωμένα στην κλάση Wedding και μέσα στις κλάσεις Person. Δεν απαιτείται να φτιάξεις και να διαχειριστείς πολλά interface, κλάσεις στρατηγικής, ή να μεταφέρεις την κατάσταση ανάμεσα σε πολλά αντικείμενα.
+
+Άμεση πρόσβαση σε κατάσταση και δεδομένα:
+Με την απλή δομή, η μέθοδος calculateFoodCost() μπορεί εύκολα να τροποποιηθεί ή να επεκταθεί ώστε να εφαρμόζει νέους κανόνες ή να διαχειρίζεται νέες κατηγορίες χωρίς να αλλάξει ολόκληρη η ιεραρχία στρατηγικών.
+
+Μικρότερο «βάρος» ανάπτυξης:
+Δεν χρειάζεται να ορίζεις ξεχωριστές στρατηγικές και να αλλάζεις την υλοποίηση ή να «κάνεις injection» τους νέους κανόνες από έξω, οπότε είναι πιο γρήγορο να προστεθούν νέες περιπτώσεις.
+
+Πότε θα ευνοούσε ο προηγούμενος κώδικας με Strategy Pattern;
+Όταν οι κανόνες κόστους είναι πολλοί, πολύπλοκοι, ή δυναμικοί — π.χ. να αλλάζουν κατά τη διάρκεια εκτέλεσης, να υπάρχουν πολλαπλές ταυτόχρονες στρατηγικές επιλογές.
+
+Όταν θέλεις να αλλάζεις συμπεριφορές εύκολα χωρίς να τροποποιείς την κλάση Wedding.
+
+Όταν επιδιώκεις υψηλή επαναχρησιμοποίηση κώδικα και πιο καθαρό separation of concerns.
+
+Συμπέρασμα:
+Ο «πειραγμένος» κώδικας είναι πιο ευέλικτος για απλές/γρήγορες επεκτάσεις και πιο εύκολος στη συντήρηση σε μικρά έργα ή prototypes.
+Ο προηγούμενος με Strategy Pattern είναι πιο κατάλληλος για μεγαλύτερα, σύνθετα συστήματα όπου η αλλαγή στρατηγικών είναι βασική λειτουργικότητα.
+
+Θέλεις να σου δείξω πώς θα πρόσθετες εύκολα έναν νέο τύπο γεύματος σε αυτόν τον απλό κώδικα;
+
+
+
+
+Δεν επιλέχθηκε κανένα αρχείο.Δεν επιλέχθηκε κανένα αρχείο.
+ChatGPT can make mistakes. Check important info. See Cookie Preferences.

@@ -1,0 +1,336 @@
+Skip to content
+Chat history
+
+This is a copy of a conversation between ChatGPT & Anonymous.
+
+Report conversation
+You said:
+We aim to develop a system for modeling Wedding events. Each wedding will take place in a venue (String) and will have a List of people (assume People class is already implemented). Each wedding event has food catered to the attendants, where the total cost is calculated by the catering company.
+Specifically, each person is entitled to one meal, which costs 3€ if its basic, and 3.5€ if its vegan. If there are more than 500 attendants then the prices are -1 / person (that means 2€/basic and 2.5€/vegans).
+
+The wedding also has a photographer that is paid based on the attendants. The b class Wedding{ String venue; List<Person> people; public void addPerson(Person p){ this.people.add(p); } public double calculateFoodCost(){ int vegans = 0; for (Person p : people){ if (p.isVegan()){ vegans += 1; } } int non_vegans = people.size() - vegans; double total; // total cost if (people.size() <= 500){ total = non_vegans * 3 + vegans * 3.5; } else{ total = non_vegans * 2 + vegans * 2.5; } return total; } public double calcPhotosCost(){ double cost; if (people.size() <= 600){ cost = people.size() * 1; } else{ cost = people.size * 0.75; } return cost; } }ase price is 1€/person but if there are more than 600 attendants then the price drops to 0.75€/person. 
+ChatGPT said:
+Your current implementation is close to correct but has a few syntax and logic issues. Here's a cleaned-up and corrected version of your Wedding class, assuming the Person class has a method isVegan() that returns a boolean.
+
+✅ Fixed and Commented Java Code:
+import java.util.ArrayList;
+import java.util.List;
+
+public class Wedding {
+    private String venue;
+    private List<Person> people;
+
+    // Constructor
+    public Wedding(String venue) {
+        this.venue = venue;
+        this.people = new ArrayList<>();
+    }
+
+    // Add a person to the wedding
+    public void addPerson(Person p) {
+        this.people.add(p);
+    }
+
+    // Calculate total food cost
+    public double calculateFoodCost() {
+        int vegans = 0;
+        for (Person p : people) {
+            if (p.isVegan()) {
+                vegans++;
+            }
+        }
+        int nonVegans = people.size() - vegans;
+        double total;
+
+        if (people.size() <= 500) {
+            total = nonVegans * 3.0 + vegans * 3.5;
+        } else {
+            total = nonVegans * 2.0 + vegans * 2.5;
+        }
+
+        return total;
+    }
+
+    // Calculate photographer cost
+    public double calcPhotosCost() {
+        double cost;
+
+        if (people.size() <= 600) {
+            cost = people.size() * 1.0;
+        } else {
+            cost = people.size() * 0.75;
+        }
+
+        return cost;
+    }
+}
+🔍 Key Fixes & Notes:
+Added a constructor for initializing the venue and list of people.
+
+Changed people.size * 0.75 to people.size() * 0.75 (missing parentheses for method call).
+
+Used consistent floating-point literals (e.g., 3.0, 2.5) to avoid implicit casting or integer division issues.
+
+Ensured proper encapsulation with private fields.
+
+If you'd like, I can help with the Person class structure or write a test driver to demonstrate usage. Let me know!
+
+You said:
+Περιγράψτε τις κακές οσμές (Bad Smells) που εντοπίσατε.
+*
+ChatGPT said:
+Στο παρεχόμενο απόσπασμα κώδικα της κλάσης Wedding, εντοπίζονται αρκετές κακές οσμές κώδικα (Code Smells). Παρακάτω παρουσιάζονται με περιγραφή και προτεινόμενη κατεύθυνση βελτίωσης:
+
+🔴 1. Long Method (Μακριές Μέθοδοι)
+calculateFoodCost() και calcPhotosCost() περιέχουν πολλή λογική μέσα σε μία μόνο μέθοδο.
+
+Πρόβλημα: Δυσκολία στη συντήρηση και στον επαναχρησιμοποιήσιμο κώδικα.
+
+Λύση: Εξαγωγή βοηθητικών μεθόδων, όπως countVegans() ή getMealPrice().
+
+🔴 2. Primitive Obsession
+Χρήση απλών τύπων (double, int) για έννοιες όπως "κόστος γεύματος", "κόστος φωτογράφου".
+
+Πρόβλημα: Σκληρά κωδικοποιημένες τιμές (magic numbers).
+
+Λύση: Δημιουργία σταθερών ή ακόμη και ξεχωριστών κλάσεων όπως MealCostCalculator ή PhotographerService.
+
+🔴 3. Magic Numbers
+Τιμές όπως 3, 3.5, 2, 2.5, 500, 600, 0.75 είναι σκληρά ενσωματωμένες.
+
+Πρόβλημα: Δεν εξηγούν το νόημά τους, δύσκολη αλλαγή σε πολλά σημεία.
+
+Λύση: Χρήση σταθερών π.χ. static final int FOOD_DISCOUNT_THRESHOLD = 500;
+
+🔴 4. Duplicated Code
+Η λογική υπολογισμού κόστους περιέχει παρόμοιο υπολογισμό για vegan και μη vegan.
+
+Λύση: Δημιουργία κοινής μεθόδου υπολογισμού με είσοδο τις τιμές μονάδας.
+
+🔴 5. Inappropriate Intimacy (Ακατάλληλη Οικειότητα)
+Η κλάση Wedding υπολογίζει πολλές λεπτομέρειες για άλλες έννοιες (π.χ. catering, φωτογράφος).
+
+Λύση: Ανάθεση ευθύνης σε ξεχωριστές κλάσεις (CateringService, PhotographyService).
+
+🔴 6. Lack of Encapsulation
+Η λίστα people είναι τροποποιήσιμη μέσω addPerson, αλλά χωρίς κανένα έλεγχο ή προστασία.
+
+Λύση: Επιστροφή αντίγραφου της λίστας ή χρήση Collections.unmodifiableList.
+
+🔴 7. Missing Null Checks / Validation
+Δεν υπάρχουν έλεγχοι για null τιμές ή κενές καταστάσεις.
+
+Πρόβλημα: Πιθανή εμφάνιση NullPointerException.
+
+Λύση: Έλεγχοι εγκυρότητας κατά την εισαγωγή ατόμων ή στη δημιουργία του αντικειμένου.
+
+✳️ Προτεινόμενες Βελτιώσεις (Refactorings):
+Extract Method – Διάσπαση μεγάλων μεθόδων.
+
+Introduce Constant – Μετατροπή magic numbers σε σταθερές.
+
+Move Method – Μεταφορά ευθυνών σε κατάλληλες κλάσεις.
+
+Replace Primitive with Object – Χρήση ειδικών τύπων αντί για double, int.
+
+Αν θέλεις, μπορώ να σου δείξω πώς να κάνεις αυτά τα refactorings στην πράξη. Θες να το δούμε;
+
+You said:
+Περιγράψτε τις μετρικές (metrics) που επηρεάζονται.
+ChatGPT said:
+Οι κακές οσμές κώδικα που εντοπίστηκαν στην κλάση Wedding επηρεάζουν αρκετές βασικές μετρικές ποιότητας λογισμικού. Παρακάτω αναλύονται οι βασικές μετρικές που πλήττονται:
+
+✅ 1. Cyclomatic Complexity (Κυκλωματική Πολυπλοκότητα)
+Τι είναι: Μετρά τον αριθμό των ανεξάρτητων διαδρομών μέσα από τον κώδικα (if, for, else κ.λπ.).
+
+Επηρεάζεται από: Τις μακριές μεθόδους calculateFoodCost() και calcPhotosCost(), οι οποίες περιέχουν διακλαδώσεις (if, for).
+
+Συνέπεια: Δυσκολία στη δοκιμή και κατανόηση, αυξημένος κίνδυνος λαθών.
+
+✅ 2. Lines of Code (LOC)
+Τι είναι: Το πλήθος των γραμμών κώδικα σε μία μέθοδο ή κλάση.
+
+Επηρεάζεται από: Την απουσία αναδόμησης και την ύπαρξη επαναλαμβανόμενης λογικής.
+
+Συνέπεια: Μειωμένη αναγνωσιμότητα και αυξημένη πολυπλοκότητα συντήρησης.
+
+✅ 3. Lack of Cohesion in Methods (LCOM)
+Τι είναι: Μετρά το βαθμό συνοχής μεταξύ των μεθόδων μιας κλάσης.
+
+Επηρεάζεται από: Την ύπαρξη πολλών ευθυνών στην Wedding (διαχείριση χώρου, φαγητού, φωτογράφου).
+
+Συνέπεια: Παραβίαση της Αρχής της Μίας Ευθύνης (Single Responsibility Principle - SRP), υποδεικνύοντας ότι η κλάση πρέπει να διασπαστεί.
+
+✅ 4. Coupling Between Objects (CBO)
+Τι είναι: Μετρά τον αριθμό των άλλων κλάσεων με τις οποίες μια κλάση έχει εξάρτηση.
+
+Επηρεάζεται από: Την εξάρτηση της Wedding από την υλοποίηση της Person και την εσωτερική γνώση για το κόστος catering και φωτογράφου.
+
+Συνέπεια: Αυξημένος βαθμός σύζευξης, μειωμένη επαναχρησιμοποίηση και αυξημένο κόστος αλλαγών.
+
+✅ 5. Maintainability Index
+Τι είναι: Συνδυαστική μετρική που δείχνει πόσο εύκολα μπορεί να συντηρηθεί ο κώδικας.
+
+Επηρεάζεται από: Όλες τις παραπάνω οσμές (μεγάλες μέθοδοι, πολυπλοκότητα, σύζευξη).
+
+Συνέπεια: Χαμηλότερο σκορ, άρα μεγαλύτερη δυσκολία συντήρησης του συστήματος.
+
+✅ 6. Code Duplication
+Επηρεάζεται από: Τη διπλή λογική υπολογισμού κόστους ανά κατηγορία χρήστη (vegan / μη vegan).
+
+Συνέπεια: Αύξηση τεχνικού χρέους και πιθανότητα για μη συνεπείς αλλαγές στο μέλλον.
+
+🔚 Συνοψίζοντας:
+Οι παραπάνω μετρικές δείχνουν ότι ο κώδικας:
+
+Δεν είναι πολύ συνεκτικός (cohesive),
+
+Είναι σχετικά πολύπλοκος (complex),
+
+Είναι δύσκολος στη συντήρηση (hard to maintain).
+
+📌 Αν σε ενδιαφέρει, μπορούμε να εφαρμόσουμε μετρικές με εργαλεία όπως SonarQube ή να δούμε ένα refactored παράδειγμα με βελτιωμένες μετρικές. Θες να προχωρήσουμε;
+
+You said:
+Ονοματίστε ποια σχεδιαστική αρχή ή πρότυπο σχεδίασης θα μπορούσε να εφαρμοστεί για την βελτίωση της ποιότητας του κώδικα.
+ChatGPT said:
+Για τη βελτίωση της ποιότητας του κώδικα της κλάσης Wedding, μπορούν να εφαρμοστούν σχεδιαστικές αρχές (Design Principles) και πρότυπα σχεδίασης (Design Patterns) που θα αυξήσουν την ευελιξία, τη συντηρησιμότητα και την επαναχρησιμοποίηση του συστήματος.
+
+✅ 1. Single Responsibility Principle (SRP) – Αρχή Μοναδικής Ευθύνης
+Τι λέει: Κάθε κλάση πρέπει να έχει μία μόνο ευθύνη.
+
+Εφαρμογή: Η κλάση Wedding αναλαμβάνει πάρα πολλές ευθύνες (χώρος, φαγητό, φωτογράφος).
+
+Βελτίωση:
+
+Δημιουργία ξεχωριστών κλάσεων:
+
+CateringService
+
+PhotographyService
+
+GuestListManager
+
+✅ 2. Open/Closed Principle (OCP)
+Τι λέει: Οι κλάσεις πρέπει να είναι ανοικτές για επέκταση, αλλά κλειστές για τροποποίηση.
+
+Πρόβλημα: Αν αλλάξει ο τρόπος υπολογισμού κόστους, πρέπει να αλλάξει η κλάση Wedding.
+
+Βελτίωση:
+
+Χρήση στρατηγικών (Strategy Pattern) για υπολογισμούς κόστους.
+
+✅ 3. Strategy Pattern
+Τι κάνει: Ορίζει μια οικογένεια αλγορίθμων (π.χ. υπολογισμός κόστους) και τους καθιστά εναλλάξιμους.
+
+Εφαρμογή:
+
+FoodCostCalculator interface με υλοποιήσεις:
+
+StandardFoodCostCalculator
+
+DiscountedFoodCostCalculator
+
+PhotoCostCalculator με ανάλογες στρατηγικές.
+
+✅ 4. Dependency Injection (DI)
+Τι κάνει: Εισάγει εξαρτήσεις μέσω constructor ή setter, αντί να τις δημιουργεί εσωτερικά.
+
+Εφαρμογή:
+
+Η Wedding να δέχεται CateringService και PhotographerService ως παραμέτρους.
+
+Αυξάνει την επαναχρησιμοποίηση και κάνει τη μονάδα πιο εύκολα testable.
+
+✅ 5. Composition over Inheritance
+Τι λέει: Προτιμήστε σύνθεση αντικειμένων αντί για κληρονομικότητα.
+
+Εφαρμογή:
+
+Η Wedding "συντίθεται" από υπηρεσίες (services), αντί να τα υλοποιεί όλα.
+
+✅ 6. Interface Segregation Principle (ISP)
+Τι λέει: Οι πελάτες δεν πρέπει να εξαρτώνται από διεπαφές που δεν χρησιμοποιούν.
+
+Εφαρμογή:
+
+Χρήση μικρών, εξειδικευμένων interfaces (π.χ. CostCalculator, PersonFilter).
+
+🔚 Συνοψίζοντας:
+Πρόβλημα	Προτεινόμενη Αρχή/Πρότυπο
+Πολλές ευθύνες σε μία κλάση	SRP, Composition
+Δυσκολία αλλαγών στον υπολογισμό κόστους	Strategy Pattern, OCP
+Επαναλαμβανόμενη και σφιχτή λογική	DI, ISP
+Χαμηλή επεκτασιμότητα	Strategy + OCP
+Αν θέλεις, μπορώ να σου δείξω πώς να ξαναγράψουμε την Wedding εφαρμόζοντας τα παραπάνω (π.χ. με Strategy Pattern). Θες να το δούμε στην πράξη;
+
+You said:
+Γράψτε τον κώδικα μετά την εφαρμογή της λύσης που επιλέξατε και ανεβάστε το αρχείο (σε συμπιεσμένη μορφή).
+ChatGPT said:
+Έτοιμο! Μπορείτε να κατεβάσετε τον κώδικα του επανασχεδιασμένου συστήματος γάμου σε μορφή αρχείου ZIP από τον παρακάτω σύνδεσμο:
+
+📦 Κατεβάστε WeddingSystem.zip
+
+Το πακέτο περιέχει τις εξής βασικές κλάσεις:
+
+Wedding.java: βασική κλάση εκδήλωσης γάμου
+
+Person.java: αναπαράσταση ατόμου
+
+FoodCostCalculator + υλοποιήσεις (Standard & Discounted)
+
+PhotoCostCalculator + υλοποίηση (Standard)
+
+Εφαρμόστηκαν οι αρχές SRP, OCP και το πρότυπο Strategy Pattern. Αν θέλεις μπορούμε να επεκτείνουμε τον σχεδιασμό με test cases ή επιπλέον υπηρεσίες (π.χ. μουσική, διακόσμηση). Θες να προχωρήσουμε; 
+
+You said:
+Περιγράψτε μία πιθανή επέκταση του συστήματος (π.χ. προσθήκη ενός νέου είδους υπαλλήλου) και γιατί η λύση που προτείνατε βοηθάει στην ευκολότερη υλοποίηση της.
+ChatGPT said:
+✅ Πιθανή Επέκταση Συστήματος: Προσθήκη DJ/Μουσικού ως Υπαλλήλου
+🧩 Περιγραφή Επέκτασης:
+Ένας πελάτης θέλει να προσλάβει DJ ή ζωντανή μουσική για τον γάμο του. Το κόστος εξαρτάται από τον αριθμό των ατόμων και το είδος της μουσικής υπηρεσίας:
+
+DJ: 100€ βασική χρέωση + 0.5€/άτομο
+
+Ζωντανή Μπάντα: 300€ βασική χρέωση + 1€/άτομο
+
+🎯 Στόχος:
+Να προσθέσουμε αυτή τη δυνατότητα χωρίς να τροποποιήσουμε τον υπάρχοντα κώδικα του Wedding, εφαρμόζοντας Open/Closed Principle και αξιοποιώντας το υπάρχον Strategy Pattern.
+
+🧱 Πώς βοηθάει η υπάρχουσα λύση:
+Στοιχείο	Πώς βοηθάει
+✅ Strategy Pattern	Μπορούμε να δημιουργήσουμε νέο interface MusicServiceCostCalculator και εναλλάξιμες υλοποιήσεις (DJService, LiveBandService)
+✅ Dependency Injection	Η Wedding μπορεί να λάβει επιπλέον υπηρεσίες ως παραμέτρους στον constructor της
+✅ Single Responsibility Principle	Η νέα λογική διαχωρίζεται καθαρά σε δική της κλάση, χωρίς να "μολύνει" τον υπόλοιπο υπολογισμό κόστους
+💡 Παράδειγμα Κώδικα Επέκτασης:
+public interface MusicServiceCostCalculator {
+    double calculate(List<Person> people);
+}
+
+public class DJService implements MusicServiceCostCalculator {
+    public double calculate(List<Person> people) {
+        return 100 + people.size() * 0.5;
+    }
+}
+
+public class LiveBandService implements MusicServiceCostCalculator {
+    public double calculate(List<Person> people) {
+        return 300 + people.size();
+    }
+}
+🧪 Πώς χρησιμοποιείται:
+MusicServiceCostCalculator music = new DJService(); // ή new LiveBandService();
+double musicCost = music.calculate(people);
+✅ Οφέλη:
+Επεκτασιμότητα χωρίς αλλαγή υπάρχοντος κώδικα
+
+Επαναχρησιμοποίηση λογικής κόστους
+
+Καθαρός και ευανάγνωστος σχεδιασμός
+
+Αν θέλεις, μπορώ να ενσωματώσω αυτή την επέκταση στον υπάρχοντα κώδικα και να σου ανεβάσω νέο ZIP. Θες να το κάνουμε;
+
+
+
+Δεν επιλέχθηκε κανένα αρχείο.Δεν επιλέχθηκε κανένα αρχείο.
+ChatGPT can make mistakes. Check important info. See Cookie Preferences.

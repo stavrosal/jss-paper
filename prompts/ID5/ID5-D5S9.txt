@@ -1,0 +1,340 @@
+Skip to content
+Chat history
+
+This is a copy of a conversation between ChatGPT & Anonymous.
+
+Report conversation
+You said:
+class Wedding{
+	String venue;
+	
+	List<Person> people;
+	
+	public void addPerson(Person p){
+		this.people.add(p);
+	}
+	
+	public double calculateFoodCost(){
+		int vegans = 0; 
+		for (Person p : people){
+			if (p.isVegan()){
+				vegans += 1;
+			}
+		}
+		
+		int non_vegans = people.size() - vegans;
+		
+		double total; // total cost
+		if (people.size() <= 500){
+			total = non_vegans * 3 + vegans * 3.5;
+		}
+		else{
+			total = non_vegans * 2 + vegans * 2.5;
+		}
+		
+		return total;	
+	}
+	
+	public double calcPhotosCost(){
+		double cost;
+		if (people.size() <= 600){
+			cost = people.size() * 1;
+		}
+		else{
+			cost = people.size * 0.75;
+		}
+		
+		return cost;
+	}
+		 
+
+}
+
+βρες μου τα code smells
+ChatGPT said:
+Ο κώδικας της κλάσης Wedding περιέχει αρκετά code smells — δηλαδή, ενδείξεις κακής σχεδίασης ή συντήρησης του κώδικα που μπορεί να οδηγήσουν σε σφάλματα ή δυσκολία στην επέκταση. Παρακάτω αναλύονται τα βασικά:
+
+🧼 Code Smells & Προτάσεις Βελτίωσης
+1. Null Pointer Exception Risk:
+List<Person> people;
+Smell: Δεν γίνεται αρχικοποίηση της λίστας people. Αν καλέσεις addPerson, θα προκαλέσει NullPointerException.
+
+Fix: Αρχικοποίησε τη λίστα:
+
+List<Person> people = new ArrayList<>();
+2. Data Clumping:
+Smell: Τα δεδομένα venue και people σχετίζονται, αλλά δεν υπάρχει encapsulation ή abstraction. Η λογική είναι διασκορπισμένη.
+
+Fix: Χρησιμοποίησε ένα helper class π.χ. WeddingDetails για τέτοιες περιπτώσεις.
+
+3. Magic Numbers:
+non_vegans * 3 + vegans * 3.5;
+people.size() * 1;
+people.size * 0.75;
+Smell: Οι τιμές (π.χ. 3, 3.5, 0.75) είναι “μαγικοί αριθμοί” χωρίς περιγραφή.
+
+Fix:
+
+private static final double VEGAN_COST_LOW = 3.5;
+private static final double NON_VEGAN_COST_LOW = 3;
+private static final double VEGAN_COST_HIGH = 2.5;
+private static final double NON_VEGAN_COST_HIGH = 2;
+4. Duplicated Logic:
+Smell: Η συνάρτηση calculateFoodCost και calcPhotosCost ελέγχουν παρόμοιες συνθήκες (people.size() <= X) και διαχωρίζουν κόστος.
+
+Fix: Απόσπασε κοινή λογική σε private helper methods.
+
+5. Method Does Too Much:
+Smell: Η calculateFoodCost περιέχει και λογική μέτρησης και λογική υπολογισμού.
+
+Fix: Διάσπαση σε 2 μεθόδους: μία που μετρά vegans και μία που υπολογίζει το κόστος.
+
+6. Method Naming Inconsistency:
+calculateFoodCost vs calcPhotosCost
+Smell: Ασυνέπεια ονομάτων.
+
+Fix: Χρησιμοποίησε συνεπή naming convention: calculatePhotosCost().
+
+7. Typo / Compilation Error:
+people.size * 0.75;
+Smell: size είναι μέθοδος, όχι πεδίο.
+
+Fix:
+
+cost = people.size() * 0.75;
+✅ Προτεινόμενη Δομή
+class Wedding {
+    String venue;
+    List<Person> people = new ArrayList<>();
+
+    public void addPerson(Person p) {
+        people.add(p);
+    }
+
+    public double calculateFoodCost() {
+        int vegans = countVegans();
+        int nonVegans = people.size() - vegans;
+
+        if (people.size() <= 500) {
+            return nonVegans * 3 + vegans * 3.5;
+        } else {
+            return nonVegans * 2 + vegans * 2.5;
+        }
+    }
+
+    public double calculatePhotosCost() {
+        int size = people.size();
+        return size <= 600 ? size * 1.0 : size * 0.75;
+    }
+
+    private int countVegans() {
+        int count = 0;
+        for (Person p : people) {
+            if (p.isVegan()) {
+                count++;
+            }
+        }
+        return count;
+    }
+}
+Αν θες, μπορώ να σου προτείνω και refactoring σε πιο μοντέρνο στυλ με χρήση Java Streams ή ακόμα και design patterns (π.χ. Strategy για διαφορετικά κόστη).
+
+You said:
+ποιες μετρικές επηρεάζονται;
+ChatGPT said:
+Πολύ καλή ερώτηση — οι μετρικές λογισμικού (software metrics) που επηρεάζονται από τα παραπάνω code smells σχετίζονται με την αναγνωσιμότητα, συντηρησιμότητα, επαναχρησιμοποίηση και πολυπλοκότητα του κώδικα. Ας δούμε αναλυτικά ποιες και πώς επηρεάζονται:
+
+🔧 Κύριες Μετρικές που Επηρεάζονται
+1. Cyclomatic Complexity (Πολυπλοκότητα Κυκλωμάτων)
+Τι μετράει: Τον αριθμό των ανεξάρτητων διαδρομών εκτέλεσης μέσα από μια μέθοδο.
+
+Πώς επηρεάζεται: Αυξάνεται λόγω των πολλών if-else και διακλαδώσεων στις μεθόδους calculateFoodCost() και calcPhotosCost().
+
+Συνέπεια: Δυσκολότερος έλεγχος με μονάδες (unit testing), μεγαλύτερη πιθανότητα σφαλμάτων.
+
+2. Cohesion (Συνοχή Κλάσης)
+Τι μετράει: Πόσο σχετικές είναι οι μέθοδοι και τα πεδία μιας κλάσης μεταξύ τους.
+
+Πώς επηρεάζεται: Η Wedding κάνει πολλά πράγματα (προσθέτει άτομα, υπολογίζει κόστος φαγητού και φωτογραφιών) και η συνοχή της μειώνεται.
+
+Συνέπεια: Η κλάση δεν είναι Single Responsibility (παραβίαση SRP - Single Responsibility Principle).
+
+3. Coupling (Σύζευξη)
+Τι μετράει: Πόσο εξαρτάται μία κλάση από άλλες.
+
+Πώς επηρεάζεται: Αν η κλάση Person αλλάξει (π.χ. αλλάξει η μέθοδος isVegan()), η Wedding επηρεάζεται.
+
+Συνέπεια: Υψηλή σύζευξη → δύσκολη συντήρηση και επαναχρησιμοποίηση.
+
+4. Lines of Code (LOC)
+Πώς επηρεάζεται: Οι μέθοδοι περιέχουν πολλή λογική χωρίς modularization.
+
+Συνέπεια: Αυξημένο LOC → δυσκολότερη ανάγνωση και συντήρηση.
+
+5. Lack of Encapsulation / Information Hiding
+Πώς επηρεάζεται: Η λίστα people είναι προσβάσιμη απευθείας από μεθόδους, χωρίς προστασία.
+
+Συνέπεια: Παραβίαση του OOP αρχών → υψηλός κίνδυνος λαθών λόγω ανεξέλεγκτων αλλαγών.
+
+6. Maintainability Index (Δείκτης Συντηρησιμότητας)
+Πώς επηρεάζεται: Ο συνδυασμός υψηλής πολυπλοκότητας, LOC και χαμηλής συνοχής μειώνει τη συντηρησιμότητα του κώδικα.
+
+Συνέπεια: Δύσκολες αλλαγές και αυξημένο τεχνικό χρέος.
+
+7. Testability (Δυνατότητα Ελέγχου με Tests)
+Πώς επηρεάζεται: Δύσκολο να ελέγξεις μεμονωμένα τη λογική κόστους επειδή όλα είναι “σφιγμένα” σε μια μέθοδο.
+
+Συνέπεια: Περισσότερα dependencies → δύσκολη μονάδα ελέγχου (unit testing).
+
+Αν χρειάζεσαι, μπορώ να σου δείξω πώς να μετρήσεις αυτές τις μετρικές με εργαλεία όπως SonarQube, PMD, Checkstyle ή IntelliJ Metrics. Θες να δούμε παραδείγματα από εργαλεία ή να συνεχίσουμε με περαιτέρω refactoring;
+
+You said:
+Ονοματίστε ποια σχεδιαστική αρχή ή πρότυπο σχεδίασης θα μπορούσε να εφαρμοστεί για την βελτίωση της ποιότητας του κώδικα και γράψε τον κώδικα εφαρμόζοντας αυτή τη τεχνική
+ChatGPT said:
+Για τη βελτίωση της ποιότητας του συγκεκριμένου κώδικα, μπορούμε να εφαρμόσουμε την αρχή του Single Responsibility (SRP) και το πρότυπο Strategy.
+
+🎯 Στόχος
+Ο διαχωρισμός των υπολογισμών κόστους (φαγητού και φωτογραφιών) από την κλάση Wedding, έτσι ώστε να είναι επεκτάσιμοι και ανεξάρτητοι. Η κάθε στρατηγική κόστους υλοποιείται ως ξεχωριστή στρατηγική.
+
+🧠 Σχεδιαστική Αρχή:
+✅ Single Responsibility Principle (SRP)
+Η κάθε κλάση πρέπει να έχει μόνο έναν λόγο αλλαγής.
+➡ Η Wedding δεν πρέπει να γνωρίζει τις λεπτομέρειες του κόστους.
+
+🧩 Σχεδιαστικό Πρότυπο:
+✅ Strategy Pattern
+Επιτρέπει την εναλλαγή διαφορετικών στρατηγικών υπολογισμού του κόστους χωρίς αλλαγή στον κώδικα του Wedding.
+
+🛠️ Εφαρμογή της Τεχνικής — Refactored Code
+1. Interface για τη στρατηγική κόστους
+public interface CostStrategy {
+    double calculateCost(List<Person> people);
+}
+2. Στρατηγική για Κόστος Φαγητού
+public class FoodCostStrategy implements CostStrategy {
+    @Override
+    public double calculateCost(List<Person> people) {
+        int vegans = 0;
+        for (Person p : people) {
+            if (p.isVegan()) vegans++;
+        }
+        int nonVegans = people.size() - vegans;
+
+        if (people.size() <= 500) {
+            return nonVegans * 3 + vegans * 3.5;
+        } else {
+            return nonVegans * 2 + vegans * 2.5;
+        }
+    }
+}
+3. Στρατηγική για Κόστος Φωτογραφιών
+public class PhotoCostStrategy implements CostStrategy {
+    @Override
+    public double calculateCost(List<Person> people) {
+        int size = people.size();
+        return size <= 600 ? size * 1.0 : size * 0.75;
+    }
+}
+4. Η ανανεωμένη κλάση Wedding
+public class Wedding {
+    private String venue;
+    private List<Person> people = new ArrayList<>();
+
+    private CostStrategy foodCostStrategy;
+    private CostStrategy photoCostStrategy;
+
+    public Wedding(CostStrategy foodCostStrategy, CostStrategy photoCostStrategy) {
+        this.foodCostStrategy = foodCostStrategy;
+        this.photoCostStrategy = photoCostStrategy;
+    }
+
+    public void addPerson(Person p) {
+        people.add(p);
+    }
+
+    public double calculateFoodCost() {
+        return foodCostStrategy.calculateCost(people);
+    }
+
+    public double calculatePhotoCost() {
+        return photoCostStrategy.calculateCost(people);
+    }
+}
+5. Παράδειγμα χρήσης
+Wedding myWedding = new Wedding(new FoodCostStrategy(), new PhotoCostStrategy());
+
+myWedding.addPerson(new Person("Maria", true));
+myWedding.addPerson(new Person("Nikos", false));
+
+System.out.println("Food cost: " + myWedding.calculateFoodCost());
+System.out.println("Photo cost: " + myWedding.calculatePhotoCost());
+✅ Πλεονεκτήματα
+📦 Επεκτασιμότητα: Μπορείς να προσθέσεις νέες στρατηγικές χωρίς να πειράξεις την κλάση Wedding.
+
+🧪 Testability: Μπορείς να τεστάρεις κάθε στρατηγική ξεχωριστά.
+
+🔁 Επαναχρησιμοποίηση: Οι στρατηγικές μπορούν να χρησιμοποιηθούν και αλλού.
+
+💡 Συμμόρφωση με SOLID: SRP + Open/Closed Principle (OCP).
+
+Αν θες, μπορούμε να εφαρμόσουμε και Dependency Injection ή να κάνουμε τις στρατηγικές configurable από εξωτερικό αρχείο (π.χ. JSON, Spring Beans). Θες να το πάμε ένα βήμα παραπέρα;
+
+You said:
+Περιγράψτε μία πιθανή επέκταση του συστήματος (π.χ. προσθήκη ενός νέου είδους υπαλλήλου) και γιατί η λύση που προτείνατε βοηθάει στην ευκολότερη υλοποίηση της.
+ChatGPT said:
+🔧 Πιθανή Επέκταση Συστήματος
+✅ Νέα Απαίτηση: Προσθήκη κόστους για προσωπικό (staff)
+Η επιχείρηση θέλει να προσθέσει κόστος υπαλλήλων για τον γάμο, π.χ.:
+
+Σεφ: 100€/άτομο
+
+Σερβιτόρος: 50€/άτομο
+
+DJ: 200€ flat fee
+
+🧩 Πώς η υπάρχουσα αρχιτεκτονική βοηθά
+Η εφαρμογή του Strategy Pattern και του Single Responsibility Principle (SRP) καθιστά εύκολη και καθαρή την επέκταση της λογικής κόστους, χωρίς αλλαγές στον υπάρχοντα κώδικα της κλάσης Wedding.
+
+✅ Πώς υλοποιείται η επέκταση
+1. Νέα στρατηγική υπολογισμού κόστους προσωπικού
+public class StaffCostStrategy implements CostStrategy {
+    private int chefs;
+    private int waiters;
+    private boolean includeDJ;
+
+    public StaffCostStrategy(int chefs, int waiters, boolean includeDJ) {
+        this.chefs = chefs;
+        this.waiters = waiters;
+        this.includeDJ = includeDJ;
+    }
+
+    @Override
+    public double calculateCost(List<Person> people) {
+        double cost = chefs * 100 + waiters * 50;
+        if (includeDJ) {
+            cost += 200;
+        }
+        return cost;
+    }
+}
+2. Χρήση στο Wedding
+CostStrategy foodCost = new FoodCostStrategy();
+CostStrategy photoCost = new PhotoCostStrategy();
+CostStrategy staffCost = new StaffCostStrategy(2, 5, true);
+
+Wedding wedding = new Wedding(foodCost, photoCost);
+double totalCost = wedding.calculateFoodCost() + wedding.calculatePhotoCost() + staffCost.calculateCost(wedding.getPeople());
+Προσοχή: Εδώ το Wedding θα μπορούσε να προσαρμοστεί ώστε να δέχεται λίστα στρατηγικών (List<CostStrategy>), για ακόμα μεγαλύτερη επεκτασιμότητα.
+
+🎯 Γιατί η λύση βοηθάει:
+Λειτουργία	Παλιά Λογική	Νέα Λογική με Strategy
+Προσθήκη κόστους υπαλλήλων	Αλλαγή στη μέθοδο calculateCost()	Δημιουργία νέας στρατηγικής
+Testing	Δύσκολο, εξαρτάται από πολλή λογική	Εύκολο, κάθε στρατηγική ελέγχεται μόνη της
+Συντήρηση / Αναβάθμιση	Εύκολα σπάει άλλο κώδικα	Δεν επηρεάζονται άλλες στρατηγικές
+Reusability	Όχι	Ναι, στρατηγικές ανακυκλώνονται
+Αν θες, μπορώ να σου δείξω και πώς να προσθέσεις ένα GUI ή REST API για να επιλέγεις στρατηγικές κόστους δυναμικά από τον χρήστη. Θες να το προχωρήσουμε έτσι;
+
+
+
+Δεν επιλέχθηκε κανένα αρχείο.Δεν επιλέχθηκε κανένα αρχείο.
+ChatGPT can make mistakes. Check important info. See Cookie Preferences.

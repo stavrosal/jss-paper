@@ -1,0 +1,648 @@
+/*
+We want to simulate a system of FiniteStateMachines.
+There are a lot of FSMs where each one performs an operation.
+After a machine starts (start()), it runs until a finish 
+condition is met (isFinished()), and the finish method 
+is called (finish()). For now, our system has two machines:
+A DivisibleNumbersMachine, where it calculates all numbers 
+divisible by 4 up to a threshold (specified by the user)
+and a PushDownAutomaton, where it calculates the sum of
+numbers up to a threshold (specified by the user). The 
+PushDown Machine has an ArrayList<Integer> as a stack. 
+*/
+
+public class StateMachine{
+	String name;
+	String machineType;
+	
+	private int counter;
+	
+	private int threshold;
+	
+	private List<Integer> stack;
+	
+	public StateMachine(int thresh, String machine){
+		this.threshold = thresh;
+		this.machineType = machine;
+		this.counter = 0;
+		if (machineType.equals("PushDownAutomaton")){
+			this.stack = new ArrayList<Integer>();
+		}
+	}
+	
+	public void run(){
+		start();
+		while (!isFinished()){
+			execute();
+		}
+		finish();
+	}
+	
+	public void start(){
+		if (machineType.equals("DivisibleNumbersMachine")){
+			System.out.println("Starting to find numbers divisible by 4 until " + threshold);
+		}
+		else if (machineType.equals("PushDownAutomaton")){
+			System.out.println("Started pushing numbers up to " + threshold + " to stack");
+		}
+	}
+		
+	public boolean isFinished(){
+		return counter >= threshold;
+	}
+	
+	public void execute(){
+		if (machineType.equals("DivisibleNumbersMachine")){
+			if (counter % 4 == 0){
+				System.out.println(counter + " is divisible by 4");
+			}
+			counter++;
+		}
+		else if (machineType.equals("PushDownAutomaton")){
+			stack.add(counter);
+			counter++;
+		}
+	}
+			
+	public void finish(){
+		if (machineType.equals("DivisibleNumbersMachine")){
+			System.out.println("Automaton finished");
+		}
+		else if (machineType.equals("PushDownAutomaton")){
+			int sum = 0;
+			for (int num : stack){
+				sum += num;
+			}
+			System.out.println("Sum = " + sum);
+			System.out.println("Automaton finished");
+		}
+	}
+}
+ChatGPT said:
+
+Your code defines a simple simulation framework for two types of finite state machines: one that prints numbers divisible by 4 (DivisibleNumbersMachine), and one that uses a stack to sum up numbers (PushDownAutomaton). It works, but there are several areas where the design can be significantly improved for scalability, maintainability, and readability.
+
+Here's a breakdown of how it could be improved:
+🔧 Issues in Current Design
+
+    Type Handling via Strings:
+
+        Using string comparisons to handle machine types ("DivisibleNumbersMachine" vs "PushDownAutomaton") is error-prone and not extensible.
+
+    Violation of OOP Principles:
+
+        The current design doesn't leverage inheritance or polymorphism, which are perfect for modeling FSM behaviors.
+
+    Hardcoded Logic in One Class:
+
+You said:
+What Bad Smells can you detect in my code
+ChatGPT said:
+
+Your code works functionally, but there are several code smells—signs that suggest potential problems with maintainability, extensibility, or design. Here's a list of bad smells in your current StateMachine class:
+🔴 1. Type Code with Conditional Logic
+
+    Smell: You're using if (machineType.equals(...)) repeatedly to determine behavior.
+
+    Problem: This violates the Open/Closed Principle — the code is not open for extension but is open for modification whenever a new machine type is added.
+
+    Fix: Use inheritance and polymorphism. Create a StateMachine base class and subclass it with DivisibleNumbersMachine and PushDownAutomaton.
+
+🔴 2. God Class
+
+    Smell: The StateMachine class does too much — it handles logic for two different types of machines, input, processing, and output.
+
+    Problem: This makes it harder to test and understand. Changes in one machine type may accidentally affect the other.
+
+    Fix: Break the class into smaller, more focused subclasses.
+
+🔴 3. Duplicated Code
+
+    Smell: Repeating similar conditional logic in start(), execute(), and finish() methods for each machine type.
+
+    Problem: Increases maintenance overhead. Any change in logic means modifying multiple blocks.
+
+    Fix: Use method overriding in subclasses to encapsulate behavior.
+
+🔴 4. Inappropriate Intimacy
+
+    Smell: Fields like stack are present even when not all machine types use them.
+
+    Problem: This ties the class too closely to the internal details of each machine type.
+
+    Fix: Move machine-specific data into their respective subclasses.
+
+🔴 5. Feature Envy
+
+    Smell: The class checks the machineType string repeatedly instead of asking objects to do the work themselves.
+
+    Fix: Let each subclass handle its behavior. The base class should not "envy" the internals of what a PushDownAutomaton or DivisibleNumbersMachine does.
+
+🔴 6. Primitive Obsession
+
+    Smell: Using strings (machineType) to indicate behavior.
+
+    Problem: Not type-safe. Easy to introduce bugs like new StateMachine(10, "DivisiblNumbersMachine").
+
+    Fix: Use polymorphism instead. Avoid using strings or enums to drive behavior in an OO system.
+
+🔴 7. Poor Naming
+
+    StateMachine is a vague name. It implies a generic FSM, but your actual implementations are very specific. Consider renaming for clarity in subclasses.
+
+✅ Suggested Refactor Plan
+
+Use an abstract class or interface:
+
+abstract class StateMachine {
+    protected int threshold;
+    protected int counter;
+
+    public StateMachine(int threshold) {
+        this.threshold = threshold;
+        this.counter = 0;
+    }
+
+    public final void run() {
+        start();
+        while (!isFinished()) {
+            execute();
+        }
+        finish();
+    }
+
+    protected abstract void start();
+    protected abstract boolean isFinished();
+    protected abstract void execute();
+    protected abstract void finish();
+}
+
+Then two subclasses:
+
+class DivisibleNumbersMachine extends StateMachine {
+    public DivisibleNumbersMachine(int threshold) {
+        super(threshold);
+    }
+
+    protected void start() {
+        System.out.println("Starting to find numbers divisible by 4 until " + threshold);
+    }
+
+    protected boolean isFinished() {
+        return counter >= threshold;
+    }
+
+    protected void execute() {
+        if (counter % 4 == 0) {
+            System.out.println(counter + " is divisible by 4");
+        }
+        counter++;
+    }
+
+    protected void finish() {
+        System.out.println("Automaton finished");
+    }
+}
+
+class PushDownAutomaton extends StateMachine {
+    private List<Integer> stack = new ArrayList<>();
+
+    public PushDownAutomaton(int threshold) {
+        super(threshold);
+    }
+
+    protected void start() {
+        System.out.println("Started pushing numbers up to " + threshold + " to stack");
+    }
+
+    protected boolean isFinished() {
+        return counter >= threshold;
+    }
+
+    protected void execute() {
+        stack.add(counter++);
+    }
+
+    protected void finish() {
+        int sum = stack.stream().mapToInt(Integer::intValue).sum();
+        System.out.println("Sum = " + sum);
+        System.out.println("Automaton finished");
+    }
+}
+
+Would you like me to help implement or refactor the full version of this for you?
+You said:
+Yes
+ChatGPT said:
+
+Great! Below is a full refactored version of your Finite State Machine (FSM) system, applying Object-Oriented Design principles and eliminating the bad smells identified earlier.
+✅ Refactored FSM Design (Clean OOP Style)
+📁 StateMachine.java (Abstract Base Class)
+
+public abstract class StateMachine {
+    protected int threshold;
+    protected int counter;
+
+    public StateMachine(int threshold) {
+        this.threshold = threshold;
+        this.counter = 0;
+    }
+
+    public final void run() {
+        start();
+        while (!isFinished()) {
+            execute();
+        }
+        finish();
+    }
+
+    protected abstract void start();
+    protected abstract boolean isFinished();
+    protected abstract void execute();
+    protected abstract void finish();
+}
+
+📁 DivisibleNumbersMachine.java
+
+public class DivisibleNumbersMachine extends StateMachine {
+
+    public DivisibleNumbersMachine(int threshold) {
+        super(threshold);
+    }
+
+    @Override
+    protected void start() {
+        System.out.println("Starting to find numbers divisible by 4 until " + threshold);
+    }
+
+    @Override
+    protected boolean isFinished() {
+        return counter >= threshold;
+    }
+
+    @Override
+    protected void execute() {
+        if (counter % 4 == 0) {
+            System.out.println(counter + " is divisible by 4");
+        }
+        counter++;
+    }
+
+    @Override
+    protected void finish() {
+        System.out.println("DivisibleNumbersMachine finished");
+    }
+}
+
+📁 PushDownAutomaton.java
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class PushDownAutomaton extends StateMachine {
+    private List<Integer> stack;
+
+    public PushDownAutomaton(int threshold) {
+        super(threshold);
+        this.stack = new ArrayList<>();
+    }
+
+    @Override
+    protected void start() {
+        System.out.println("Started pushing numbers up to " + threshold + " to stack");
+    }
+
+    @Override
+    protected boolean isFinished() {
+        return counter >= threshold;
+    }
+
+    @Override
+    protected void execute() {
+        stack.add(counter++);
+    }
+
+    @Override
+    protected void finish() {
+        int sum = stack.stream().mapToInt(Integer::intValue).sum();
+        System.out.println("Sum = " + sum);
+        System.out.println("PushDownAutomaton finished");
+    }
+}
+
+📁 Main.java (Usage Example)
+
+public class Main {
+    public static void main(String[] args) {
+        StateMachine divisibleMachine = new DivisibleNumbersMachine(20);
+        StateMachine pushdownMachine = new PushDownAutomaton(10);
+
+        divisibleMachine.run();
+        System.out.println("-------------------------");
+        pushdownMachine.run();
+    }
+}
+
+✅ Benefits of This Refactor
+Problem in Original	Fixed By
+Type checking with strings	Polymorphism (subclasses)
+All logic in one class	Separated into focused classes
+Unused fields for some machine types	Moved fields like stack to the appropriate subclass
+Duplicated code in methods	Shared logic in base class, specific in subclasses
+Not extensible	Easily extend by adding new subclasses of StateMachine
+
+If you like, I can walk you through how to add a new FSM type, or show how to write unit tests for these classes. Want to continue?
+You said:
+Describe a possible extension of this system and how the refactor helps
+ChatGPT said:
+
+A great question—and it shows you're thinking in terms of design evolution, which is key in software development.
+🌱 Possible Extension: PalindromeCheckerMachine
+🧠 Purpose:
+
+Imagine you want to add a new FSM that checks whether each number up to a threshold is a palindrome, and prints the palindromes.
+🔧 Without Refactor:
+
+You would have to:
+
+    Add a new string "PalindromeCheckerMachine" in every if/else block in start(), execute(), finish().
+
+    Possibly create new variables only used by that machine but stored in the monolithic StateMachine class.
+
+    Risk breaking the logic for other machines.
+
+This is fragile, error-prone, and violates the Open/Closed Principle: you'd be modifying old code instead of extending behavior.
+✅ With Refactor (Polymorphic Design):
+
+You simply create a new class like this:
+
+public class PalindromeCheckerMachine extends StateMachine {
+
+    public PalindromeCheckerMachine(int threshold) {
+        super(threshold);
+    }
+
+    @Override
+    protected void start() {
+        System.out.println("Checking for palindromes up to " + threshold);
+    }
+
+    @Override
+    protected boolean isFinished() {
+        return counter >= threshold;
+    }
+
+    @Override
+    protected void execute() {
+        if (isPalindrome(counter)) {
+            System.out.println(counter + " is a palindrome");
+        }
+        counter++;
+    }
+
+    @Override
+    protected void finish() {
+        System.out.println("PalindromeCheckerMachine finished");
+    }
+
+    private boolean isPalindrome(int num) {
+        String str = Integer.toString(num);
+        return str.equals(new StringBuilder(str).reverse().toString());
+    }
+}
+
+And use it in Main.java like this:
+
+StateMachine palindromeChecker = new PalindromeCheckerMachine(150);
+palindromeChecker.run();
+
+✅ How the Refactor Helps
+Design Feature	How It Helps
+Polymorphism	Easily add new machines without changing existing code.
+Single Responsibility Principle	Each FSM class handles its own logic.
+Open/Closed Principle	System is open for extension, closed for modification.
+Code Readability	Each class has focused, clear logic. Easier to understand and test.
+Scalability	You can plug in new behaviors (FSMs) without fear of breaking others.
+🧩 Summary
+
+    By refactoring to a polymorphic, object-oriented design, you turn your FSM framework into a plugin-like system where new automata can be added cleanly, safely, and without touching legacy code.
+
+Would you like to explore:
+
+    Adding input from the user?
+
+    Logging instead of printing?
+
+    Unit tests for each machine?
+
+I'm happy to help with any of those directions!
+You said:
+Give me the advantages in list form
+ChatGPT said:
+
+Sure! Here’s a concise list of advantages of the refactored FSM system:
+✅ Advantages of the Refactored FSM Design
+
+    Extensibility
+
+        Easily add new state machines without modifying existing code.
+
+        Follows the Open/Closed Principle.
+
+    Encapsulation
+
+        Each machine encapsulates its own logic.
+
+        Machine-specific data (e.g., stack) lives in the correct class.
+
+    Polymorphism
+
+        Eliminates conditionals (if/else) based on machine type.
+
+        Base class defines a consistent run() flow, subclasses customize behavior.
+
+    Reusability
+
+        Shared logic (like run() and counter tracking) is reused in the base class.
+
+        Common structure, different behavior.
+
+    Maintainability
+
+        Cleaner, smaller, focused classes are easier to debug and update.
+
+        Reduces chance of breaking unrelated functionality.
+
+    Testability
+
+        Each machine can be tested independently.
+
+        Clear separation of concerns improves unit test design.
+
+    Readability
+
+        Code is easier to understand — behavior is localized to specific classes.
+
+        Avoids cluttered and bloated control logic.
+
+    Type Safety
+
+        Avoids using fragile string-based type identifiers.
+
+        Errors are caught at compile time, not runtime.
+
+    Design Scalability
+
+        The framework supports large-scale additions as a true FSM system.
+
+        New machines follow the same contract and integrate seamlessly.
+
+    Cleaner Architecture
+
+        Adheres to key OO principles: SRP, OCP, LSP.
+
+        Leads toward more architectural patterns like Strategy or State Pattern.
+
+Let me know if you want this formatted as a table or included in documentation/comments!
+You said:
+Which design principles did you apply to refactor the code
+ChatGPT said:
+
+Great question. In the refactored version of your FSM system, the design was improved by applying several core object-oriented design principles and SOLID principles. Here's a breakdown of the key principles used:
+✅ Design Principles Applied in the Refactor
+1. Single Responsibility Principle (SRP)
+
+    A class should have only one reason to change.
+
+    Before: StateMachine handled all FSM logic for every type.
+
+    After: Each machine type (DivisibleNumbersMachine, PushDownAutomaton, etc.) handles its own logic, making each class focused and easier to maintain.
+
+2. Open/Closed Principle (OCP)
+
+    Software entities should be open for extension, but closed for modification.
+
+    Before: Adding a new FSM required modifying the original class with new if/else blocks.
+
+    After: New FSMs can be added by simply subclassing StateMachine, without altering existing code.
+
+3. Liskov Substitution Principle (LSP)
+
+    Subtypes must be substitutable for their base types.
+
+    Application: All subclasses of StateMachine (like PushDownAutomaton) can be used wherever a StateMachine is expected.
+
+    This makes the system flexible and polymorphic.
+
+4. Polymorphism
+
+    Objects are treated according to their interface, not their implementation.
+
+    Application: The run() method in StateMachine works the same for all machine types — behavior is customized via method overriding.
+
+5. Encapsulation
+
+    Internal details of a class are hidden from others.
+
+    Before: Fields like stack were exposed or present unnecessarily in a generic machine.
+
+    After: Each subclass has its own state (like the stack), encapsulating behavior/data.
+
+6. Don't Repeat Yourself (DRY)
+
+    Avoid duplication of logic or code.
+
+    Before: Repeated if/else blocks for type-specific logic.
+
+    After: Shared structure moved to the base class, custom behavior handled in subclasses.
+
+7. Separation of Concerns (SoC)
+
+    Each part of the system should handle a distinct concern.
+
+    FSM control flow (run()) is centralized in the base class.
+
+    Specific machine behaviors (e.g., sum, divisibility) are handled in dedicated classes.
+
+8. Favor Composition Over Inheritance (partially applied)
+
+    Use composition when behavior varies — though this example mainly uses inheritance due to similar structure.
+
+    While inheritance works well here, a more advanced design could extract strategies (like ExecutionStrategy) if the FSM steps diverge significantly in structure.
+
+Would you like a diagram (e.g., UML class diagram) of the new design, or help mapping these principles to another example?
+You said:
+Describe how the refactor affected class metrics
+ChatGPT said:
+
+Excellent — analyzing how a refactor impacts class metrics is a smart way to assess code quality improvements quantitatively. Here’s how the refactor affects key object-oriented class metrics:
+📊 Changes in Class Metrics After Refactor
+Metric	Before Refactor	After Refactor	Impact
+Lines of Code (LOC)	High (everything in one class)	Lower per class, more total classes	✂️ Reduced complexity per class
+Cyclomatic Complexity	High (many if/else blocks)	Low in each subclass	✅ Easier to test and reason about
+Class Cohesion (LCOM)	Low (unrelated responsibilities in one class)	High (each class does one thing)	✅ Better separation of concerns
+Coupling Between Objects (CBO)	Moderate (type strings entangle logic)		
+You said:
+Describe how the refactor affected class metrics in list form
+ChatGPT said:
+
+Certainly! Here's a list describing how the refactor positively affected key class-level software metrics:
+✅ Impact of Refactor on Class Metrics
+
+    Lines of Code (LOC)
+
+        Before: One large class with many responsibilities.
+
+        After: LOC reduced per class and logic distributed across multiple focused classes.
+
+        ✅ Improved readability and maintainability.
+
+    Cyclomatic Complexity
+
+        Before: High, due to multiple if/else statements controlling behavior.
+
+        After: Low in each subclass since control logic is replaced by polymorphism.
+
+        ✅ Simpler, easier-to-test methods.
+
+    Lack of Cohesion of Methods (LCOM)
+
+        Before: Low cohesion — unrelated behaviors (e.g., stack operations and divisibility checks) in one class.
+
+        After: High cohesion — each class does one specific thing.
+
+        ✅ Improved modularity and clarity.
+
+    Coupling Between Objects (CBO)
+
+        Before: Medium — use of strings (machineType) to control flow increased logical coupling.
+
+        After: Low — base class defines the interface, subclasses implement it.
+
+        ✅ More decoupled, extensible design.
+
+    Depth of Inheritance Tree (DIT)
+
+        Before: Shallow — single class, no inheritance.
+
+        After: Slightly deeper — abstract base class with multiple subclasses.
+
+        ⚠️ Slight increase, but acceptable for the gain in structure and reusability.
+
+    Number of Children (NOC)
+
+        Before: N/A — no subclassing.
+
+        After: Increased — multiple subclasses inheriting from StateMachine.
+
+        ✅ Indicates increased extensibility.
+
+    Response for a Class (RFC)
+
+        Before: High — single class responsible for all behaviors.
+
+        After: Reduced — each class only responds to its own behavior.
+
+        ✅ Improved testability and predictability.
+
+Would you like a visual breakdown (e.g., table or chart) of these metrics, or a tool recommendation for measuring them in your IDE?

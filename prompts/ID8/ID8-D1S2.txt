@@ -1,0 +1,626 @@
+/*
+We wish to model a system of a clothing shop.
+The shop (for now) sells only pants and shirts
+There are two types of clothing, Vintage and
+Modern. Each clothing contains a void printInfo
+method which takes no parameters and prints a 
+message of the type:
+"A <Type> of <Clothes>"
+It is worth noting that each clothing shop can 
+sell only one of the clothing types, that means
+that a Modern Shop cannot sell Vintage clothing
+and vice versa.
+*/
+
+public abstract class Clothes{
+	public abstract void printInfo();
+}
+
+public abstract class Shirt extends Clothes{
+	public abstract void printInfo();
+}
+
+public abstract class Pants extends Clothes{
+	public abstract void printInfo();
+}
+
+
+public class VintageShirt extends Shirt{
+	public void printInfo(){
+		System.out.println("A vintage shirt");
+	}
+}
+
+public class ModernShirt extends Shirt{
+	public void printInfo(){
+		System.out.println("A modern shirt");
+	}
+}
+
+public class VintagePants extends Pants{
+	public void printInfo(){
+		System.out.println("A vintage pair of pants");
+	}
+}
+
+public class ModernPants extends Pants{
+	public void printInfo(){
+		System.out.println("A modern pair of pants");
+	}
+}
+
+public class Shop{
+	private List<Clothes> clothing; 
+	
+	public Shop(){
+		this.clothing = new ArrayList<Clothes>();
+	}
+	
+	public void addShirt(Clothes c){
+		clothing.add(c);
+	}
+	
+	public void addPants(Clothes c){
+		clothing.add(c);
+	}
+}
+
+public class MainClass{
+	
+	public static void main(String[] args){
+		Shop vintageShop = new Shop(); // Create a Vintage shop
+		vintageShop.addShirt(new VintageShirt());
+		vintageShop.addPants(new VintagePants());
+		
+		Shop modernShop = new Shop(); // Create a Modern shop
+		modernShop.addShirt(new ModernShirt());
+		modernShop.addPants(new ModernPants());	
+	}
+}
+ChatGPT said:
+
+Your code models the clothing shop fairly well, but there are a few design flaws and violations of business logic that should be addressed:
+🔍 Problems Identified
+1. No Enforcement of Shop Type
+
+    Shop does not enforce whether it's a Vintage or Modern shop.
+
+    Nothing stops someone from doing this (which is against the specification):
+
+    Shop shop = new Shop();
+    shop.addShirt(new VintageShirt());
+    shop.addPants(new ModernPants()); // Invalid
+
+2. Generic Clothes Usage in addShirt and addPants
+
+    These methods take Clothes, which allows any subtype (modern or vintage). You’re missing type safety.
+
+3. Code Duplication
+
+    All concrete classes override the same `
+
+You said:
+Describe the Bad Smells of the above code
+ChatGPT said:
+
+The code you've written contains several code smells—indicators of potential design issues that may hinder maintainability, scalability, or clarity. Here's a breakdown of the bad smells present:
+🔧 Code Smells in the Clothing Shop System
+1. Type Checking Smell (or Lack of Type Safety)
+
+    Problem: The Shop class is not type-safe. It accepts any Clothes object, regardless of whether it's Vintage or Modern.
+
+    Impact: Violates business rules (a Modern shop could contain Vintage clothes).
+
+    Example:
+
+    Shop shop = new Shop();
+    shop.addShirt(new VintageShirt()); // Invalid for a modern shop, but allowed
+
+2. Duplicate Code
+
+    Problem: Each subclass overrides printInfo() with hardcoded strings, which are very similar.
+
+    Impact: Leads to code duplication and makes future maintenance harder.
+
+    Example:
+
+    public void printInfo(){
+        System.out.println("A modern shirt");
+    }
+
+3. Violation of Open/Closed Principle
+
+    Problem: Adding a new clothing type (e.g., FuturisticClothes) requires modifying existing structures.
+
+    Impact: The system isn't open for extension, but it is open for modification, which is fragile.
+
+4. God Class Smell (Emerging)
+
+    Problem: Shop is responsible for managing and enforcing business rules (which it's currently not doing properly). As logic expands (e.g., checking types), Shop may become bloated.
+
+    Impact: Becomes harder to maintain and reason about.
+
+5. Poor Abstraction
+
+    Problem: The abstraction hierarchy doesn't provide much value. The abstract classes Shirt and Pants just override printInfo() again, but don't define new behavior.
+
+    Impact: Adds complexity without adding flexibility.
+
+6. Inappropriate Naming or Lack of Semantic Clarity
+
+    Problem: The Shop class doesn't convey whether it's a vintage or modern shop.
+
+    Impact: Causes confusion and requires the developer to infer shop type based on what was added to it (not enforced).
+
+7. Lack of Encapsulation of Business Rules
+
+    Problem: The core rule ("a shop can only sell one type of clothes") is not enforced anywhere in the code.
+
+    Impact: Violations of business constraints are possible without compiler or runtime errors.
+
+8. Missing Polymorphism Usage
+
+    Problem: The subclasses are used for message formatting only; polymorphism isn’t being effectively used to simplify logic or behavior.
+
+9. Primitive Obsession (Mild)
+
+    Problem: Instead of encoding clothing type (vintage/modern) as part of the object model, it’s embedded in strings inside the printInfo() method.
+
+10. Inconsistent Method Naming
+
+    Problem: Methods addShirt() and addPants() both accept generic Clothes, not specific types.
+
+    Impact: Confusing interface; method names suggest specificity that’s not actually enforced.
+
+✅ Suggestions to Refactor
+
+    Introduce ModernShop and VintageShop classes.
+
+    Use generics or marker interfaces (ModernClothing, VintageClothing) to enforce type constraints.
+
+    Refactor printInfo() to remove duplication.
+
+    Possibly use an enum (ClothingStyle { VINTAGE, MODERN }) to make clothing style explicit.
+
+Would you like me to walk through a refactored version of this code?
+You said:
+Which design principles can be used to improve it
+ChatGPT said:
+
+To improve the design of your clothing shop system and eliminate the code smells, you can apply several object-oriented design principles. Here are the most relevant ones and how they would help improve your code:
+✅ Key Design Principles to Apply
+1. Single Responsibility Principle (SRP)
+
+    "A class should have only one reason to change."
+
+Problem in your code:
+
+    Shop is handling both clothing storage and (implicitly) enforcing business rules.
+
+Improvement:
+
+    Create separate shop types (e.g., VintageShop, ModernShop) responsible for their own clothing validation.
+
+    Consider separating the business rule enforcement into a helper or factory.
+
+2. Open/Closed Principle (OCP)
+
+    "Software entities should be open for extension but closed for modification."
+
+Problem in your code:
+
+    If you want to add a new style (e.g., FuturisticShirt), you may need to modify the Shop or existing logic.
+
+Improvement:
+
+    Use interfaces or inheritance hierarchies (e.g., ClothingStyle enum or strategy) that allow easy extension without altering core code.
+
+3. Liskov Substitution Principle (LSP)
+
+    "Subtypes must be substitutable for their base types without breaking the program."
+
+Problem in your code:
+
+    Currently okay, but risk arises if you pass a ModernPants into a VintageShop.
+
+Improvement:
+
+    Introduce marker interfaces like ModernClothing and VintageClothing so that the compiler or runtime logic enforces correct substitutions.
+
+4. Interface Segregation Principle (ISP)
+
+    "Clients should not be forced to depend on interfaces they do not use."
+
+Observation:
+
+    This isn't violated directly, but your abstract classes like Shirt and Pants don’t add much. If you ever add unrelated methods to Clothes, these subclasses might be affected.
+
+Improvement:
+
+    Ensure each interface or abstract class is lean and meaningful. Consider using interfaces instead of abstract classes if you don't share implementation.
+
+5. Dependency Inversion Principle (DIP)
+
+    "Depend on abstractions, not concretions."
+
+Problem in your code:
+
+    The Shop currently knows about concrete types like VintageShirt, etc.
+
+Improvement:
+
+    Use factories or abstract clothing producers to generate clothing without the shop knowing exact classes.
+
+6. Composition over Inheritance
+
+    "Favor composition to extend behavior instead of using class inheritance hierarchies."
+
+Problem:
+
+    You're heavily relying on an inheritance hierarchy: Clothes -> Shirt -> VintageShirt.
+
+Improvement:
+
+    Instead, you could use composition: have a Clothing object that holds a Style and a Category, reducing the class explosion (VintageShirt, ModernShirt, etc.)
+
+7. Encapsulation
+
+    "Hide internal details and expose only what’s necessary."
+
+Problem:
+
+    Shop exposes methods that accept any Clothes instance, leaking implementation detail and weakening control.
+
+Improvement:
+
+    Use encapsulated add methods in typed shop classes that enforce constraints internally.
+
+8. Don't Repeat Yourself (DRY)
+
+    "Avoid code duplication."
+
+Problem:
+
+    Each printInfo() method contains nearly identical code.
+
+Improvement:
+
+    Use a shared style and type property in the Clothes class, then dynamically generate the message.
+
+9. Law of Demeter (LoD)
+
+    "Talk to friends, not strangers."
+
+Risk:
+
+    If you later add nested objects (e.g., style inside category inside item), avoid long chains like item.getCategory().getStyle().getName().
+
+Improvement:
+
+    Use delegation or simplify access.
+
+Would You Like a Refactored Example?
+
+If you're interested, I can demonstrate how to refactor this system using these principles—for example, by:
+
+    Creating Shop<T extends Clothes> with generics.
+
+    Using composition (e.g., ClothingStyle and ClothingType).
+
+    Introducing a factory to handle object creation.
+
+Would you like to see that?
+You said:
+Yes
+ChatGPT said:
+
+Great! Let's walk through a refactored version of your clothing shop system using solid design principles like:
+
+    ✅ Single Responsibility
+
+    ✅ Open/Closed
+
+    ✅ Type Safety with Generics
+
+    ✅ Composition over Inheritance
+
+    ✅ Don't Repeat Yourself (DRY)
+
+🧱 1. Define Core Concepts Using Composition
+
+Instead of making many subclasses like ModernShirt, we'll represent key attributes as objects or enums.
+✅ ClothingStyle Enum
+
+public enum ClothingStyle {
+    VINTAGE, MODERN
+}
+
+✅ ClothingType Enum
+
+public enum ClothingType {
+    SHIRT, PANTS
+}
+
+👕 2. Clothes Class Using Composition
+
+public class Clothes {
+    private final ClothingStyle style;
+    private final ClothingType type;
+
+    public Clothes(ClothingStyle style, ClothingType type) {
+        this.style = style;
+        this.type = type;
+    }
+
+    public void printInfo() {
+        System.out.printf("A %s %s%n", 
+            style.toString().toLowerCase(), 
+            type == ClothingType.PANTS ? "pair of pants" : "shirt");
+    }
+
+    public ClothingStyle getStyle() {
+        return style;
+    }
+
+    public ClothingType getType() {
+        return type;
+    }
+}
+
+    ✅ This removes the need for 4 separate classes (VintageShirt, ModernPants, etc.), following DRY and Composition over Inheritance.
+
+🏪 3. Generic Shop Class With Style Enforcement
+
+import java.util.*;
+
+public class Shop {
+    private final ClothingStyle shopStyle;
+    private final List<Clothes> inventory;
+
+    public Shop(ClothingStyle style) {
+        this.shopStyle = style;
+        this.inventory = new ArrayList<>();
+    }
+
+    public void addClothing(Clothes c) {
+        if (c.getStyle() != shopStyle) {
+            throw new IllegalArgumentException(
+                "This shop only sells " + shopStyle.toString().toLowerCase() + " clothes.");
+        }
+        inventory.add(c);
+    }
+
+    public void printInventory() {
+        for (Clothes c : inventory) {
+            c.printInfo();
+        }
+    }
+
+    public ClothingStyle getShopStyle() {
+        return shopStyle;
+    }
+}
+
+    ✅ This enforces Single Responsibility, Open/Closed, and Liskov Substitution (no misuse of types).
+
+🧪 4. Main Program Example
+
+public class MainClass {
+    public static void main(String[] args) {
+        Shop vintageShop = new Shop(ClothingStyle.VINTAGE);
+        vintageShop.addClothing(new Clothes(ClothingStyle.VINTAGE, ClothingType.SHIRT));
+        vintageShop.addClothing(new Clothes(ClothingStyle.VINTAGE, ClothingType.PANTS));
+
+        System.out.println("Vintage Shop Inventory:");
+        vintageShop.printInventory();
+
+        Shop modernShop = new Shop(ClothingStyle.MODERN);
+        modernShop.addClothing(new Clothes(ClothingStyle.MODERN, ClothingType.SHIRT));
+        modernShop.addClothing(new Clothes(ClothingStyle.MODERN, ClothingType.PANTS));
+
+        System.out.println("\nModern Shop Inventory:");
+        modernShop.printInventory();
+
+        // Uncommenting this would throw an exception
+        // modernShop.addClothing(new Clothes(ClothingStyle.VINTAGE, ClothingType.PANTS));
+    }
+}
+
+✅ Benefits of This Design
+Principle	How It's Addressed
+SRP	Shop only manages inventory and enforces one rule
+OCP	Adding a new style (e.g., FUTURISTIC) only requires updating the enum
+DRY	No duplicate printInfo() logic
+Type Safety	Logic checks style before adding to inventory
+Composition over Inheritance	Eliminates class explosion (ModernShirt, etc.)
+📦 Optional Extension Ideas
+
+    Add a Price field or Brand attribute.
+
+    Use a ClothingFactory to abstract creation.
+
+    Introduce a GUI or database layer.
+
+Would you like me to add a factory or unit tests to this design next?
+You said:
+Describe which metrics are affected by this change
+ChatGPT said:
+
+Refactoring the code using proper design principles significantly impacts several software quality metrics—both internal code quality metrics and object-oriented design metrics.
+
+Here's a breakdown of the metrics affected by the change and how they improve:
+🔍 1. Cyclomatic Complexity
+
+    Measures: Number of independent paths through a method or class (complex decision logic).
+
+    Before: Higher complexity due to multiple subclasses and possible branching when managing styles manually.
+
+    After: Lower complexity because style checking is centralized and simplified with enums and one class.
+
+✅ Improved
+📦 2. Class Coupling (CBO – Coupling Between Objects)
+
+    Measures: Number of other classes a class is coupled to.
+
+    Before: Shop had implicit knowledge of VintageShirt, ModernPants, etc.
+
+    After: Shop is only coupled to the general Clothes class and enums.
+
+✅ Improved
+🔁 3. Code Duplication (Redundancy)
+
+    Measures: Repeated logic or code.
+
+    Before: 4 classes repeated nearly identical printInfo() methods.
+
+    After: A single method in Clothes handles all print logic using data.
+
+✅ Improved
+🏗️ 4. Number of Classes (NOC)
+
+    Measures: Total number of classes in the system.
+
+    Before: 7 classes (VintageShirt, ModernShirt, VintagePants, ModernPants, etc.).
+
+    After: 3 main classes (Clothes, Shop, MainClass) + 2 enums.
+
+✅ Reduced → This simplifies maintenance and navigation.
+🧬 5. Lack of Cohesion in Methods (LCOM)
+
+    Measures: How related the methods in a class are to each other.
+
+    Before: Shop might evolve to manage unrelated concerns (inventory, validation, printing).
+
+    After: Shop focuses only on managing one style of inventory.
+
+✅ Improved Cohesion
+🧩 6. Depth of Inheritance Tree (DIT)
+
+    Measures: Maximum depth of class hierarchy.
+
+    Before: Clothes → Shirt → ModernShirt (DIT = 3).
+
+    After: Flat structure using composition (DIT = 1).
+
+✅ Improved (shallower, easier to understand)
+🧪 7. Testability & Maintainability
+
+    Measures: How easily the code can be tested or changed.
+
+    Before: Each subclass needed to be tested individually; tight coupling made adding features risky.
+
+    After: Centralized logic and fewer classes make the system easier to test and extend.
+
+✅ Significantly Improved
+📈 Summary of Metrics Improvement
+Metric	Status After Refactor	Why
+Cyclomatic Complexity	✅ Lower	Fewer branches, cleaner logic
+Coupling Between Objects	✅ Lower	Shop decoupled from concrete classes
+Code Duplication	✅ Greatly reduced	One unified printInfo()
+Class Count	✅ Lower	No subclass explosion
+Cohesion (LCOM)	✅ Higher	Classes have focused responsibilities
+Depth of Inheritance Tree	✅ Lower	Flatter hierarchy
+Testability	✅ Easier	Fewer classes, simpler structure
+
+Would you like to measure these metrics in real code using a static analysis tool or see how unit tests could be structured around the refactored version?
+You said:
+Describe a possible extension of this system and why this new solution will help it
+ChatGPT said:
+🔄 Possible Extension of the Clothing Shop System
+
+Let’s explore a realistic extension:
+🛍️ Add Support for Multiple Brands, Prices, and Discounts
+🧩 New Requirements
+
+Suppose your shop needs to:
+
+    Support brands (e.g., Levi’s, Zara, Gucci).
+
+    Assign a price to each clothing item.
+
+    Allow discounts (e.g., vintage items have 10% off).
+
+    Filter clothing based on criteria (e.g., "all modern shirts under $50").
+
+🧠 Why the Refactored Design Helps
+
+The current refactored solution already follows composition over inheritance, which makes it flexible and extensible without modifying the core system. You can simply enhance the Clothes class with more attributes instead of creating more subclasses like DiscountedModernZaraShirt.
+🔧 How to Extend the System
+✅ Add Brand and Price
+
+public class Clothes {
+    private final ClothingStyle style;
+    private final ClothingType type;
+    private final String brand;
+    private final double price;
+
+    public Clothes(ClothingStyle style, ClothingType type, String brand, double price) {
+        this.style = style;
+        this.type = type;
+        this.brand = brand;
+        this.price = price;
+    }
+
+    public void printInfo() {
+        System.out.printf("A %s %s by %s costs $%.2f%n", 
+            style.toString().toLowerCase(), 
+            type == ClothingType.PANTS ? "pair of pants" : "shirt",
+            brand, price);
+    }
+
+    // Getters for filtering or logic
+    public ClothingStyle getStyle() { return style; }
+    public ClothingType getType() { return type; }
+    public String getBrand() { return brand; }
+    public double getPrice() { return price; }
+}
+
+✅ Add Discount Support (Optional via Decorator or Simple Field)
+
+public class DiscountedClothes extends Clothes {
+    private final double discountRate;
+
+    public DiscountedClothes(Clothes base, double discountRate) {
+        super(base.getStyle(), base.getType(), base.getBrand(), base.getPrice());
+        this.discountRate = discountRate;
+    }
+
+    @Override
+    public void printInfo() {
+        double discountedPrice = getPrice() * (1 - discountRate);
+        System.out.printf("A discounted %s %s by %s costs $%.2f (original: $%.2f)%n",
+            getStyle().toString().toLowerCase(),
+            getType() == ClothingType.PANTS ? "pair of pants" : "shirt",
+            getBrand(),
+            discountedPrice,
+            getPrice());
+    }
+}
+
+🔎 Benefits of This Design in Extensions
+Feature	Why It Works Well
+New fields (brand, price)	Easily added to Clothes without touching other classes.
+Discounted clothing	Modeled using composition or decoration, not subclassing.
+Filtering logic	Can be done with List<Clothes> + lambdas or streams.
+Multiple shop types	Shop class already restricts by style, so extending to manage sales or filter stock is trivial.
+💡 Example: Filtering for Discounts or Price
+
+public List<Clothes> findAffordableShirts(List<Clothes> inventory, double maxPrice) {
+    return inventory.stream()
+        .filter(c -> c.getType() == ClothingType.SHIRT && c.getPrice() <= maxPrice)
+        .collect(Collectors.toList());
+}
+
+🚀 Conclusion
+
+This new solution—based on data-driven, composition-friendly design—enables:
+
+    🧱 Scalable architecture (no class explosion).
+
+    🎯 Focused responsibility per class.
+
+    🧪 Easy testing and filtering (good for GUI or backend).
+
+    💰 Support for e-commerce features like pricing and promotions.
+
+Would you like to see this extension implemented fully in code or connected to a basic UI or database?

@@ -1,0 +1,388 @@
+Skip to content
+Chat history
+
+This is a copy of a conversation between ChatGPT & Anonymous.
+
+Report conversation
+You said:
+/*
+A company that has warehouses all over the globe wishes
+to develop a system such as each warehouse can manage
+its products and calculate order costs. Each warehouse
+has some attributes, which are the name of the warehouse (String)
+,a List of Items (Item) and a List of Orders (Item). 
+There is also a string that will hold the type of the warehouse. 
+Each warehouse can be either local or central, based on its location. 
+The key difference between a local and a central warehouse is the VAT
+rate policy. The vat type (REDUCED, NORMAL, EXTRA) will be held in a String variable.
+There is also an addOrder method which takes as a parameter an Item,
+adds it to the orders list and at the same time, removes it from the items list. 
+Finally, there is a calcCost method which doesn’t take any parameters and calculates
+the total cost of the orders, that is, the cost of each item 
+(assume there is a getPrice() method in Item class which returns the price of the item as double) 
+along with the VAT, which is applied to the total cost. 
+*/
+
+public class Warehouse{
+	private String name;
+	private List<Item> items; // available items (stock)
+	private List<Item> orders; // ordered items (removed from stock)
+	private String type;
+	private String VAType;
+	
+	public Warehouse(String n, List<Item> i, String type, String vat){
+		this.name = n;
+		this.items = i;
+		this.type = type;
+		this.VATtpe = vat;
+	}
+	
+	public void addOrder(Item i){
+		items.remove(i);
+		order.add(i);
+	}
+	
+	
+	public double calcCost(){
+		double vat = 0.0;
+		if (VAType.equals("REDUCED")){
+			vat = 0.13;
+		}
+		else if (VAType.equals("NORMAL")){
+			vat = 0.24;
+		}
+		else if (VAType.equals("EXTRA")){
+			vat = 0.33;
+		}
+		
+		double cost = 0;
+		for (Item i ; orders){
+			cost += i.getPrice();
+		}
+		
+		return (cost + cost*vat);
+			
+	}
+
+}
+
+Περιγράψτε τις κακές οσμές (Bad Smells) που εντοπίσατε.
+*
+ChatGPT said:
+Ο παρακάτω κώδικας της κλάσης Warehouse παρουσιάζει διάφορες κακές οσμές κώδικα (code smells) που μπορούν να επηρεάσουν τη συντηρησιμότητα, ευαναγνωσιμότητα και λειτουργικότητα της εφαρμογής. Παρακάτω παρατίθενται οι κυριότερες:
+
+✅ 1. Τυπογραφικά λάθη (Typos)
+VATtpe στο constructor έχει ορθογραφικό λάθος. Το σωστό είναι VAType, όπως δηλώνεται στο πεδίο.
+
+order.add(i);: Το όνομα της λίστας είναι orders, όχι order.
+
+👉 Πρόβλημα: Οδηγεί σε σφάλματα μεταγλώττισης (compile-time errors).
+
+✅ 2. Παραβίαση Αρχής Ενιαίας Ευθύνης (Single Responsibility Principle)
+Η κλάση Warehouse χειρίζεται:
+
+Λογική για είδη (products),
+
+Λογική για παραγγελίες (orders),
+
+Υπολογισμό κόστους και ΦΠΑ (VAT).
+
+👉 Πρόβλημα: Η πολυπλοκότητα αυξάνεται και η δοκιμή/συντήρηση γίνεται πιο δύσκολη.
+
+✅ 3. Χρήση String για τιμές κατηγορίας (magic strings)
+Το VAT κρατιέται ως String ("REDUCED", "NORMAL", "EXTRA").
+Το ίδιο ισχύει για τον τύπο αποθήκης ("local", "central").
+
+👉 Πρόβλημα: Είναι επιρρεπές σε λάθη (π.χ., ορθογραφικά) και δεν παρέχει type-safety.
+
+✅ Λύση: Χρήση enum για VATType και WarehouseType.
+
+✅ 4. Κακή διαχείριση λίστας παραγγελιών
+Η λίστα orders δεν αρχικοποιείται ποτέ.
+
+👉 Πρόβλημα: Θα οδηγήσει σε NullPointerException.
+
+✅ Λύση: Αρχικοποιήστε τη λίστα στον constructor:
+
+this.orders = new ArrayList<>();
+✅ 5. Κακή χρήση enhanced for loop
+Στο calcCost():
+
+for (Item i ; orders)
+Η σύνταξη είναι λανθασμένη.
+
+👉 Πρόβλημα: Συντακτικό σφάλμα.
+
+✅ Λύση:
+
+for (Item i : orders)
+✅ 6. Συγχώνευση ευθυνών addOrder()
+Η μέθοδος addOrder() αφαιρεί αντικείμενο από τα stock items και το προσθέτει στα orders.
+
+👉 Πρόβλημα: Δεν υπάρχει έλεγχος εάν το αντικείμενο όντως υπάρχει στο items (stock), ούτε διαχείριση αποτυχίας.
+
+✅ Λύση: Ελέγξτε την ύπαρξη και προσθέστε λογική επιβεβαίωσης.
+
+✅ 7. Χρήση List<Item> χωρίς προστασία μεταβολής (defensive copy)
+Η λίστα items δίνεται από τον constructor και αποθηκεύεται απευθείας.
+
+👉 Πρόβλημα: Η εξωτερική λίστα μπορεί να μεταβληθεί και να επηρεάσει τον εσωτερικό state.
+
+✅ Λύση: Κάντε new ArrayList<>(i) στον constructor.
+
+✅ 8. Έλλειψη τεκμηρίωσης (comments) ή JavaDoc
+Η κλάση δεν περιέχει καμία τεκμηρίωση με σχόλια ή JavaDoc για τις μεθόδους ή τα πεδία.
+
+👉 Πρόβλημα: Μειωμένη ευαναγνωσιμότητα και δυσκολία συντήρησης.
+
+✍️ Συνοψίζοντας:
+Οι κυριότερες "κακές οσμές" είναι:
+
+Τυπογραφικά λάθη,
+
+Μη αρχικοποιημένα πεδία,
+
+Χρήση "magic strings" αντί για enums,
+
+Παραβίαση SRP (πολλαπλές ευθύνες σε μία κλάση),
+
+Κακή σύνταξη for loop και έλλειψη ελέγχων,
+
+Κακή διαχείριση λιστών και απουσία προστασίας από μεταβολές.
+
+Αν θέλεις, μπορώ να σου δώσω και μια διορθωμένη έκδοση του κώδικα, βασισμένη στις παραπάνω παρατηρήσεις. Θες να προχωρήσουμε με αυτό;
+
+You said:
+Περιγράψτε τις μετρικές (metrics) που επηρεάζονται.
+ChatGPT said:
+Οι "κακές οσμές" (code smells) που εντοπίσαμε στον κώδικα της κλάσης Warehouse επηρεάζουν άμεσα διάφορες μετρικές λογισμικού, οι οποίες σχετίζονται με την ποιότητα, πολυπλοκότητα και συντηρησιμότητα του κώδικα. Παρακάτω παρουσιάζονται οι βασικές μετρικές που επηρεάζονται:
+
+📏 1. Cohesion (Συνοχή)
+Τι είναι: Δείχνει πόσο στενά σχετίζονται οι μέθοδοι και τα πεδία μιας κλάσης.
+
+Πρόβλημα: Η Warehouse χειρίζεται προϊόντα, παραγγελίες και υπολογισμό κόστους με VAT. Αυτή η πολυπλοκότητα υποδεικνύει χαμηλή συνοχή.
+
+Επίπτωση: Δυσκολία συντήρησης, ανάγκη για συχνές αλλαγές σε πολλές μεθόδους όταν αλλάζει ένα χαρακτηριστικό.
+
+📏 2. Coupling (Σύζευξη)
+Τι είναι: Μέτρο εξάρτησης μιας κλάσης από άλλες.
+
+Πρόβλημα: Υψηλή εξάρτηση από String literals για σημαντικές έννοιες όπως τύπος αποθήκης και VAT, χωρίς έλεγχο ή ασφάλεια τύπου.
+
+Επίπτωση: Η πιθανότητα σφαλμάτων αυξάνεται όταν αλλάξει ένα "string constant" σε άλλο σημείο του κώδικα.
+
+📏 3. Cyclomatic Complexity (Κυκλωματική Πολυπλοκότητα)
+Τι είναι: Μετρά τον αριθμό των λογικών διακλαδώσεων σε μια μέθοδο.
+
+Πρόβλημα: Η calcCost() έχει πολλαπλές if-else συνθήκες που αυξάνουν την πολυπλοκότητα.
+
+Επίπτωση: Αυξημένη δυσκολία στον έλεγχο (testing) και κατανόηση του κώδικα.
+
+📏 4. Lines of Code (LOC) / Method Length
+Τι είναι: Πλήθος γραμμών ανά μέθοδο ή κλάση.
+
+Πρόβλημα: Αν και μικρές, οι μέθοδοι αυτές θα αυξηθούν μελλοντικά λόγω της πολυπλοκότητας.
+
+Επίπτωση: Δυσκολία στη συντήρηση καθώς ο κώδικας "φουσκώνει".
+
+📏 5. Number of Responsibilities per Class
+Τι είναι: Πόσες διαφορετικές "ευθύνες" (λογικές λειτουργίες) έχει μια κλάση.
+
+Πρόβλημα: Η Warehouse κάνει πάρα πολλά (SRP Violation).
+
+Επίπτωση: Χαμηλή επαναχρησιμοποίηση και δυσκολία στην αλλαγή χωρίς να επηρεαστούν άλλα μέρη του κώδικα.
+
+📏 6. Number of Public Methods
+Τι είναι: Πλήθος δημοσίων μεθόδων που προσφέρονται προς χρήση.
+
+Πρόβλημα: Αν προστεθούν πολλές λειτουργίες στη Warehouse, η διεπαφή θα "φουσκώσει".
+
+Επίπτωση: Αυξάνεται η επιφάνεια επίθεσης (API surface), μειώνεται η ευκολία κατανόησης.
+
+📏 7. Lack of Encapsulation
+Πρόβλημα: Οι λίστες items και orders δεν προστατεύονται επαρκώς (π.χ. δεν υπάρχει unmodifiable list ή deep copy).
+
+Επίπτωση: Κώδικας έξω από την κλάση μπορεί να αλλάξει εσωτερικά δεδομένα — με αποτέλεσμα χαμηλή πληροφοριακή απόκρυψη (information hiding).
+
+🔄 Περίληψη επηρεαζόμενων μετρικών:
+Μετρική	Επίπτωση
+Cohesion	Χαμηλή
+Coupling	Υψηλή
+Cyclomatic Complexity	Αυξημένη
+Lines of Code / Method Length	Εν δυνάμει αυξανόμενη
+Number of Responsibilities	Πολλαπλές ευθύνες
+Public API Size	Εν δυνάμει εκτεταμένο
+Encapsulation	Ελλιπής
+Αν θέλεις, μπορώ να σου δείξω και βελτιωμένη έκδοση του κώδικα με κατάλληλες βελτιώσεις που μειώνουν τις αρνητικές επιπτώσεις στις παραπάνω μετρικές. Θέλεις να το δούμε;
+
+You said:
+Ονοματίστε ποια σχεδιαστική αρχή ή πρότυπο σχεδίασης θα μπορούσε να εφαρμοστεί για την βελτίωση της ποιότητας του κώδικα και Γράψτε τον κώδικα μετά την εφαρμογή της λύσης που επιλέξατε 
+ChatGPT said:
+Για να βελτιώσουμε την ποιότητα του κώδικα της κλάσης Warehouse, μπορούμε να εφαρμόσουμε τις παρακάτω αρχές αντικειμενοστραφούς σχεδίασης και πρότυπα σχεδίασης:
+
+✅ Σχεδιαστική Αρχή: Single Responsibility Principle (SRP)
+➤ Λύση: Διαχωρίζουμε τις ευθύνες – η αποθήκη δεν πρέπει να υπολογίζει τον ΦΠΑ ή να διαχειρίζεται παραγγελίες μόνη της. Αυτές οι λειτουργίες πρέπει να διαχωριστούν σε ανεξάρτητες κλάσεις.
+
+✅ Σχεδιαστικό Πρότυπο: Strategy Pattern
+➤ Λύση: Χρησιμοποιούμε το Strategy Pattern για να διαχειριστούμε τον υπολογισμό ΦΠΑ (VAT). Αντί να ελέγχουμε με if/else ποιο VAT θα εφαρμοστεί, χρησιμοποιούμε διαφορετικές στρατηγικές (κλάσεις) για κάθε τύπο VAT.
+
+✅ Σχεδιαστική Αρχή: Open-Closed Principle
+➤ Λύση: Η προσθήκη νέου τύπου ΦΠΑ δεν απαιτεί τροποποίηση υπάρχουσας λογικής (π.χ., δεν αλλάζουμε την calcCost, απλώς προσθέτουμε νέα στρατηγική).
+
+✅ ΝΕΟΣ ΒΕΛΤΙΩΜΕΝΟΣ ΚΩΔΙΚΑΣ:
+import java.util.ArrayList;
+import java.util.List;
+
+// ---------- ENUMS ----------
+enum VATType {
+    REDUCED, NORMAL, EXTRA
+}
+
+enum WarehouseType {
+    LOCAL, CENTRAL
+}
+
+// ---------- INTERFACES ----------
+interface VATStrategy {
+    double applyVAT(double cost);
+}
+
+// ---------- STRATEGIES ----------
+class ReducedVAT implements VATStrategy {
+    public double applyVAT(double cost) {
+        return cost * 1.13;
+    }
+}
+
+class NormalVAT implements VATStrategy {
+    public double applyVAT(double cost) {
+        return cost * 1.24;
+    }
+}
+
+class ExtraVAT implements VATStrategy {
+    public double applyVAT(double cost) {
+        return cost * 1.33;
+    }
+}
+
+// ---------- ITEM ----------
+class Item {
+    private String name;
+    private double price;
+
+    public Item(String name, double price){
+        this.name = name;
+        this.price = price;
+    }
+
+    public double getPrice(){
+        return price;
+    }
+
+    @Override
+    public boolean equals(Object o){
+        if (!(o instanceof Item)) return false;
+        Item other = (Item)o;
+        return this.name.equals(other.name);
+    }
+
+    @Override
+    public int hashCode(){
+        return name.hashCode();
+    }
+}
+
+// ---------- WAREHOUSE ----------
+public class Warehouse {
+    private String name;
+    private List<Item> items;
+    private List<Item> orders;
+    private WarehouseType type;
+    private VATStrategy vatStrategy;
+
+    public Warehouse(String name, List<Item> initialItems, WarehouseType type, VATStrategy vatStrategy){
+        this.name = name;
+        this.items = new ArrayList<>(initialItems); // defensive copy
+        this.orders = new ArrayList<>();
+        this.type = type;
+        this.vatStrategy = vatStrategy;
+    }
+
+    public boolean addOrder(Item item){
+        if (items.contains(item)) {
+            items.remove(item);
+            orders.add(item);
+            return true;
+        }
+        return false;
+    }
+
+    public double calcCost(){
+        double cost = 0;
+        for (Item i : orders){
+            cost += i.getPrice();
+        }
+        return vatStrategy.applyVAT(cost);
+    }
+}
+🎯 Πλεονεκτήματα της νέας σχεδίασης:
+Βελτίωση	Τι Κερδίζουμε
+✅ SRP εφαρμοσμένο	Ξεκάθαρες ευθύνες ανά κλάση
+✅ Strategy Pattern	Εύκολη προσθήκη νέων στρατηγικών ΦΠΑ
+✅ Καθαρή αρχιτεκτονική	Ευκολότερη συντήρηση και τεστ
+✅ Χρήση enums	Ασφάλεια τύπου, λιγότερα λάθη
+✅ Defensive copy στις λίστες	Αποφυγή side-effects
+Αν θέλεις, μπορώ να προσθέσω και unit tests ή παράδειγμα χρήσης του νέου συστήματος. Θες να το δούμε;
+
+You said:
+Περιγράψτε μία πιθανή επέκταση του συστήματος (π.χ. προσθήκη ενός νέου είδους υπαλλήλου) και γιατί η λύση που προτείνατε βοηθάει στην ευκολότερη υλοποίηση της
+ChatGPT said:
+✅ Πιθανή Επέκταση του Συστήματος
+Μία φυσική επέκταση του συστήματος θα μπορούσε να είναι η προσθήκη υπαλλήλων αποθήκης, με διαφορετικούς ρόλους και αρμοδιότητες. Για παράδειγμα:
+
+👷‍♂️ Νέος Τύπος Οντότητας: Employee
+Τύποι Υπαλλήλων:
+WarehouseManager – Διαχειρίζεται τα αποθέματα και εγκρίνει παραγγελίες.
+
+Clerk – Μπορεί μόνο να καταχωρεί παραγγελίες.
+
+Auditor – Έχει μόνο δικαίωμα ανάγνωσης (π.χ. ελέγχει τα κόστη ή τα αποθέματα).
+
+🔄 Επέκταση μέσω Πολυμορφισμού
+Μπορούμε να χρησιμοποιήσουμε ένα interface Employee, με διαφορετικές υλοποιήσεις για κάθε ρόλο. Κάθε υπάλληλος έχει διαφορετική στρατηγική αλληλεπίδρασης με την αποθήκη.
+
+interface Employee {
+    void performAction(Warehouse warehouse, Item item);
+}
+
+class Clerk implements Employee {
+    public void performAction(Warehouse warehouse, Item item) {
+        warehouse.addOrder(item);
+    }
+}
+
+class WarehouseManager implements Employee {
+    public void performAction(Warehouse warehouse, Item item) {
+        if (warehouse.hasStock(item)) {
+            warehouse.addOrder(item);
+            System.out.println("Order approved by manager.");
+        }
+    }
+}
+✅ Γιατί η υπάρχουσα λύση βοηθά:
+Βασικό Σημείο	Πώς η λύση το υποστηρίζει
+Χαμηλή σύζευξη (low coupling)	Η αποθήκη δεν εξαρτάται από το ποιος την καλεί
+SRP & OCP	Κάθε ρόλος υλοποιείται ξεχωριστά χωρίς να αλλάξει η αποθήκη
+Strategy Pattern (VAT)	Αν προστεθούν νέοι τύποι ΦΠΑ, δεν χρειάζεται αλλαγή στον πυρήνα
+Επεκτασιμότητα	Νέα roles και συμπεριφορές μπορούν να προστεθούν εύκολα
+Testability	Μπορείς να δοκιμάσεις κάθε υπάλληλο ανεξάρτητα από την αποθήκη
+🎯 Συμπέρασμα
+Η προτεινόμενη σχεδίαση (με διαχωρισμό ευθυνών και χρήση στρατηγικών) προωθεί την επεκτασιμότητα και καθιστά εύκολη την υλοποίηση μελλοντικών λειτουργιών, όπως η εισαγωγή νέων τύπων υπαλλήλων, χωρίς να τροποποιείται ο υπάρχων κώδικας. Αυτό είναι πυρήνας της αρχής Open/Closed (ανοιχτό για επεκτάσεις, κλειστό για τροποποιήσεις).
+
+Θες να σου δείξω ένα παράδειγμα χρήσης με υπαλλήλους και αποθήκες σε πλήρη ροή;
+
+
+
+Δεν επιλέχθηκε κανένα αρχείο.Δεν επιλέχθηκε κανένα αρχείο.
+ChatGPT can make mistakes. Check important info. See Cookie Preferences.
